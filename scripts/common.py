@@ -60,3 +60,14 @@ def save_json(path, obj):
 
 def load_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def permitted_text(root):
+    """Lowercased text of the files that name creators the page may clip."""
+    files = [root / "campaigns.md", root / "watchlist.md", *root.glob("media/raw/*/SOURCE.md")]
+    return "\n".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.exists()).lower()
+
+
+def is_listed(known, *names):
+    """True if any channel name or handle appears as a whole word in the permission files' text."""
+    return any(re.search(rf"(?<![\w@]){re.escape(n.lower())}(?!\w)", known) for n in names if n and len(n) > 2)

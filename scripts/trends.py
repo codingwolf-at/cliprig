@@ -6,12 +6,12 @@ usage: python trends.py --query "stand-up comedy" [--hours 24] [--limit 30] [--o
        python trends.py --channel https://www.youtube.com/@name [--channel ...] --hours 168
        python trends.py --self-test
 """
-import argparse, re, sys, time
+import argparse, sys, time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ROOT, ytdlp_json
+from common import ROOT, is_listed, permitted_text, ytdlp_json
 
 UPLOAD_DATE_SORT = "&sp=CAI%253D"  # YouTube search sorted by upload date
 
@@ -32,12 +32,6 @@ def listing(url, limit):
     return [e["url"] for e in flat.get("entries", []) if e.get("url") and "/shorts/" not in e["url"]]
 
 
-def permitted_text(root):
-    """Lowercased text of the files that name creators the page may clip."""
-    files = [root / "campaigns.md", root / "watchlist.md", *root.glob("media/raw/*/SOURCE.md")]
-    return "\n".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.exists()).lower()
-
-
 def rank(infos, hours, now, known):
     """(rows sorted by views per hour, {reason: count} of skipped videos)."""
     rows, skipped = [], Counter()
@@ -53,7 +47,7 @@ def rank(infos, hours, now, known):
         v = i.get("view_count") or 0
         ch = i.get("channel") or i.get("uploader") or ""
         handle = (i.get("uploader_id") or "").lower()
-        perm = any(re.search(rf"(?<![\w@]){re.escape(n)}(?!\w)", known) for n in (ch.lower(), handle) if len(n) > 2)
+        perm = is_listed(known, ch, handle)
         rows.append({"vph": v / age, "views": v, "age": age, "min": (i.get("duration") or 0) / 60, "channel": ch,
                      "title": i.get("title") or "", "url": i.get("webpage_url"), "heat": bool(i.get("heatmap")), "perm": perm})
     return sorted(rows, key=lambda r: -r["vph"]), skipped

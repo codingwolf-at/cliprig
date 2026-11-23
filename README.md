@@ -32,6 +32,7 @@ Then say "set up my clip page". Setup asks 4 questions (page name, niche, platfo
 | `rule-check` | Before posting: specs, length, required tags, banned terms and credit, plus a hand check of permission, music and campaign-only rules |
 | `learning-loop` | Logs each post, fills 12/24/72h reads, daily and weekly reviews with medians by pillar, platform, format, hour and test. Real numbers only |
 | `trend-radar` | Recent long-form videos in the niche, or from permitted creators, ranked by views per hour, with a permission column |
+| `stream-finder` | Live streams on YouTube and Twitch ranked by viewers, plus whether permitted creators are live now. No keys needed |
 | `playbook` | Runs the day: 7-day kickoff, then find, check, cut and gate clips, one approval message, logging, engagement and the evening report |
 
 More skills are on the way.
