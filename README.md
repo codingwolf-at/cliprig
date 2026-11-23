@@ -24,6 +24,7 @@ Then say "set up my clip page". Setup asks 4 questions (page name, niche, platfo
 | skill | what it does |
 |---|---|
 | `setup` | Installs ffmpeg, yt-dlp and faster-whisper, asks 4 questions, builds the page folder |
+| `campaign-finder` | Live campaigns for the page's niche: rate per 1K, views to first payout, budget left, rules, link. Ranked for a new or established page |
 
 More skills are on the way.
 
