@@ -31,6 +31,7 @@ Then say "set up my clip page". Setup asks 4 questions (page name, niche, platfo
 | `hook-writer` | 3 on-screen hook options per clip in different patterns, checked against the clip, past hooks and what won on the page |
 | `rule-check` | Before posting: specs, length, required tags, banned terms and credit, plus a hand check of permission, music and campaign-only rules |
 | `learning-loop` | Logs each post, fills 12/24/72h reads, daily and weekly reviews with medians by pillar, platform, format, hour and test. Real numbers only |
+| `trend-radar` | Recent long-form videos in the niche, or from permitted creators, ranked by views per hour, with a permission column |
 
 More skills are on the way.
 
