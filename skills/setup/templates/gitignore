@@ -1,0 +1,13 @@
+# secrets: YouTube login cookies (works like a password)
+cookies.txt
+*cookies*.txt
+
+# big or regenerated files
+.venv/
+jobs/
+media/**/*.mp4
+media/**/*.mkv
+media/**/*.webm
+media/**/*.m4a
+media/**/*.wav
+.DS_Store

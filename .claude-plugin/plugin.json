@@ -1,0 +1,11 @@
+{
+  "name": "cliprig",
+  "displayName": "Cliprig",
+  "version": "0.1.0",
+  "description": "Run a clip page in any niche: find paid clipping campaigns, find moments, cut captioned vertical clips, check permission and rules, learn from real numbers. You approve every post.",
+  "author": {
+    "name": "Atul Tameshwari"
+  },
+  "keywords": ["clipping", "shorts", "reels", "content-rewards", "video"],
+  "skills": ["./skills/"]
+}
