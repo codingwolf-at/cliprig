@@ -29,6 +29,7 @@ Then say "set up my clip page". Setup asks 4 questions (page name, niche, platfo
 | `moment-finder` | Ranks clip candidates in a long video, podcast or VOD from laughs and loudness, hook phrases, "most replayed" and chat spikes, cut on sentence edges |
 | `clip-cutter` | Cuts a pick into a 1080x1920 clip: fill, blur or facecam layout, word-by-word captions with swears masked, hook box, -14 LUFS audio |
 | `hook-writer` | 3 on-screen hook options per clip in different patterns, checked against the clip, past hooks and what won on the page |
+| `rule-check` | Before posting: specs, length, required tags, banned terms and credit, plus a hand check of permission, music and campaign-only rules |
 
 More skills are on the way.
 
