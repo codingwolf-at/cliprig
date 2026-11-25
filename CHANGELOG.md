@@ -4,6 +4,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-26
+
+A new `doctor` skill, much smaller downloads, and fixes from the first end-to-end run driven by Claude.
+
 ### Added
 
 - `doctor` skill: checks and repairs a page's setup (Python, packages, yt-dlp age, ffmpeg captions, speech model, page files, cookies, self-tests). `setup` now finishes by running it.
@@ -50,5 +54,6 @@ First public release: 14 skills that run a short-form clip page in any niche, fr
 - Caption swear masking is English only. Translated captions are masked by hand.
 - Sentence edges treat abbreviations like "Mr." as the end of a sentence.
 
-[Unreleased]: https://github.com/codingwolf-at/cliprig/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/codingwolf-at/cliprig/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/codingwolf-at/cliprig/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/codingwolf-at/cliprig/releases/tag/v0.1.0
