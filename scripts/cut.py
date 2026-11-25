@@ -131,8 +131,8 @@ def main():
     ffmpeg = ffmpeg_with_libass()
     d = Path(a.job); c = load_json(d / "candidates.json")
     pick = next((x for x in c["candidates"] if x["n"] == a.pick), None)
-    if not pick:
-        sys.exit(f"no candidate {a.pick} in {d / 'candidates.json'}")
+    if not pick and (a.start is None or a.end is None):  # a custom range needs no candidate
+        sys.exit(f"no candidate {a.pick} in {d / 'candidates.json'}; pass --start and --end for a custom range")
     s0 = a.start if a.start is not None else pick["start"]; e0 = a.end if a.end is not None else pick["end"]
     words = load_json(d / "transcript.json") if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"

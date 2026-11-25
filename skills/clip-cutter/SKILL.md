@@ -21,7 +21,7 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 
 `.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/cut.py" jobs/<id> --pick <n> --layout fill|blur|facecam --hook "TEXT"`
 
-- `--start` / `--end` (seconds in the source) trim the candidate. Most clips work at 7-30 seconds and within the campaign's length rules. End on the payoff.
+- `--start` / `--end` (seconds in the source) trim the candidate. With an unused `--pick` number they cut any range of the source, for example a moment from `questions-to-posts`. Most clips work at 7-30 seconds and within the campaign's length rules. End on the payoff.
 - Captions mask swears and always mask slurs. `--allow-profanity` only if the campaign and platform allow it. `--captions none` if the source already has burned-in captions.
 
 It writes `media/edits/<job>_clip<n>.mp4` and a `.json` with times, layout, hook and source. Re-running with the same pick overwrites it.
