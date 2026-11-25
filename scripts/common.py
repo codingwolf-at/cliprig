@@ -71,3 +71,22 @@ def permitted_text(root):
 def is_listed(known, *names):
     """True if any channel name or handle appears as a whole word in the permission files' text."""
     return any(re.search(rf"(?<![\w@]){re.escape(n.lower())}(?!\w)", known) for n in names if n and len(n) > 2)
+
+
+def video_source(c, s0, e0, d, margin=3.0):
+    """(path, offset): a file with video covering source seconds [s0, e0], and the source time its 0 s is at.
+    URL jobs keep only audio, so the range (plus a margin) is downloaded once at up to 4K into jobs/<id>/sections/."""
+    src = c["source"]
+    if any(s.get("codec_type") == "video" for s in ffprobe(src).get("streams", [])):
+        return src, 0.0
+    url = (c.get("info") or {}).get("webpage_url") or ""
+    if not is_url(url):
+        sys.exit(f"{src} has no video, and the job has no source URL to fetch it from")
+    a, b = max(0.0, s0 - margin), e0 + margin
+    out = Path(d) / "sections" / f"{a:.1f}-{b:.1f}.mp4"
+    if not out.exists():
+        out.parent.mkdir(exist_ok=True)
+        # exact cut points keep burned captions in sync with the speech
+        run(ytdlp_base() + ["-f", "bv*[height<=2160]+ba/b[height<=2160]/b", "--merge-output-format", "mp4",
+                            "--download-sections", f"*{a:.2f}-{b:.2f}", "--force-keyframes-at-cuts", "-o", str(out), url])
+    return str(out), a

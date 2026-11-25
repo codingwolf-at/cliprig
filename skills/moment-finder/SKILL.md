@@ -15,7 +15,7 @@ Read the page's `playbook.md` (pillars, skip list) and the campaign's rules in `
 
 `.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/moments.py" <url-or-file> --top 8`
 
-It writes `jobs/<id>/candidates.md`. Signals: loudness spikes (laughter, applause, shouting), hook phrases in the transcript (faster-whisper, word timestamps), the YouTube "most replayed" heatmap, and live-chat spikes, when available. A missing signal is skipped, not faked. Windows start and end on sentence edges where the transcript allows.
+For a link it downloads the audio only, which is all the ranking needs: a few hundred MB instead of gigabytes for a 4-hour VOD (transcribing it still takes a while). `clip-cutter` later fetches video for just the picked range. It writes `jobs/<id>/candidates.md`. Signals: loudness spikes (laughter, applause, shouting), hook phrases in the transcript (faster-whisper, word timestamps), the YouTube "most replayed" heatmap, and live-chat spikes, when available. A missing signal is skipped, not faked. Windows start and end on sentence edges where the transcript allows.
 
 Options:
 

@@ -26,14 +26,14 @@ def fetch(src, d, max_min):
         info = ytdlp_json(src)
         save_json(d / "info.json", {k: info.get(k) for k in ("id", "title", "uploader", "channel", "uploader_id", "webpage_url",
                                                              "duration", "view_count", "upload_date", "heatmap", "is_live", "was_live")})
-        vid = d / "source.mp4"
+        # audio is all ranking needs; clip-cutter fetches video for just the picked range later.
+        # The whole file downloads over plain HTTP, much faster than a section streamed through ffmpeg.
+        old = d / "source.mp4"  # jobs made before audio-only downloads
+        vid = old if old.exists() else d / "source.m4a"
         if not vid.exists():
-            args = ytdlp_base() + ["-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080]/b", "--merge-output-format", "mp4",
-                                   "-o", str(vid)]
-            if (info.get("duration") or 0) > max_min * 60:
-                print(f"source is {info['duration'] / 60:.0f} min; using the first {max_min} (raise --max-minutes for more)")
-                args += ["--download-sections", f"*0-{max_min * 60}"]
-            run(args + [src])
+            run(ytdlp_base() + ["-f", "ba[ext=m4a]/ba", "-x", "--audio-format", "m4a", "-o", str(d / "source.%(ext)s"), src])
+        if (info.get("duration") or 0) > max_min * 60:
+            print(f"source is {info['duration'] / 60:.0f} min; scanning the first {max_min} (raise --max-minutes for more)")
         if info.get("was_live") and not (d / "chat.json").exists():  # YouTube chat replay
             run(ytdlp_base() + ["--skip-download", "--write-subs", "--sub-langs", "live_chat", "-o", str(d / "chat"), src], check=False)
     else:

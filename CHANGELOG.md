@@ -8,6 +8,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 - `doctor` skill: checks and repairs a page's setup (Python, packages, yt-dlp age, ffmpeg captions, speech model, page files, cookies, self-tests). `setup` now finishes by running it.
 
+### Changed
+
+- `moment-finder` downloads only the audio of a link, which is all the ranking needs: a few hundred MB instead of gigabytes for a long VOD. `clip-cutter` and `multilang` then download video for just the clip's range, at up to 4K. `clip-cutter --frame` saves a frame for choosing the layout. Jobs made with the old full-video download still work.
+
 ### Fixed
 
 - `live-mode` never fired a spike on YouTube: its chat arrives in batches about 10 seconds late, and seconds were judged after 3. It now waits 15 seconds on YouTube (`--chat-delay` to change it). In a 4-minute test on a busy stream, 0 spikes became 5.

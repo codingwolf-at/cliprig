@@ -4,14 +4,14 @@
 hook box in the first seconds, loudness normalised to -14 LUFS.
 Writes media/edits/<job>_clip<n>.mp4 + .json (metadata for rule checks).
 
-usage: python cut.py jobs/<id> --pick 1 [--layout fill|blur|facecam] [--focus 0.5] [--cam x:y:w:h]
+usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [--focus 0.5] [--cam x:y:w:h]
                      [--hook "TEXT"] [--captions word|none] [--allow-profanity] [--start SEC --end SEC]
        python cut.py --self-test
 """
 import argparse, re, shutil, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ROOT, load_json, run, save_json, tool
+from common import ROOT, load_json, run, save_json, tool, video_source
 
 W, H = 1080, 1920
 CAP_Y = {"fill": 1380, "blur": 1460, "facecam": 1120}
@@ -123,6 +123,7 @@ def main():
     ap.add_argument("--captions", choices=["word", "none"], default="word")
     ap.add_argument("--allow-profanity", action="store_true", help="keep swear words in captions (slurs are always masked)")
     ap.add_argument("--start", type=float); ap.add_argument("--end", type=float)
+    ap.add_argument("--frame", action="store_true", help="save one frame from the middle of the clip to choose a layout, then stop")
     a = ap.parse_args()
     if a.layout == "facecam" and not a.cam:
         sys.exit("--layout facecam needs --cam x:y:w:h (grab a frame and measure the cam box)")
@@ -134,12 +135,18 @@ def main():
     if not pick and (a.start is None or a.end is None):  # a custom range needs no candidate
         sys.exit(f"no candidate {a.pick} in {d / 'candidates.json'}; pass --start and --end for a custom range")
     s0 = a.start if a.start is not None else pick["start"]; e0 = a.end if a.end is not None else pick["end"]
+    src, off = video_source(c, s0, e0, d)  # URL jobs keep audio only: this fetches video for just this range
+    if a.frame:
+        png = d / f"frame_{a.pick}.png"
+        run([ffmpeg, "-y", "-v", "error", "-ss", f"{(s0 + e0) / 2 - off:.2f}", "-i", src, "-frames:v", "1", str(png)])
+        print(png)
+        return
     words = load_json(d / "transcript.json") if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"
     ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity), encoding="utf-8")
     out = ROOT / "media" / "edits"; out.mkdir(parents=True, exist_ok=True)
     mp4 = out / f"{d.name}_clip{a.pick}.mp4"
-    encode(ffmpeg, c["source"], s0, e0, video_filter(a.layout, ass, a.focus, a.cam), mp4)
+    encode(ffmpeg, src, s0 - off, e0 - off, video_filter(a.layout, ass, a.focus, a.cam), mp4)
     info = c.get("info", {})
     save_json(mp4.with_suffix(".json"), {"file": str(mp4), "job": str(d), "pick": a.pick, "start": s0, "end": e0,
                                          "layout": a.layout, "focus": a.focus, "cam": a.cam, "captions": a.captions,

@@ -13,7 +13,7 @@ usage: python translate.py <clip.mp4> (--export | --lang LANG ...)
 import argparse, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import load_json, save_json
+from common import load_json, save_json, video_source
 from cut import CAP_Y, build_ass, encode, ffmpeg_with_libass, video_filter
 
 
@@ -63,7 +63,7 @@ def main():
     if not a.lang:
         sys.exit("give --export or --lang <code>")
     ffmpeg = ffmpeg_with_libass()
-    src = load_json(d / "candidates.json")["source"]
+    src, off = video_source(load_json(d / "candidates.json"), s0, e0, d)
     layout = meta.get("layout", "blur")
     for lang in a.lang:
         tf = clip.with_name(f"{clip.stem}_{lang}.json")
@@ -77,7 +77,7 @@ def main():
         ass.write_text(build_ass(spread(sents, t["lines"]), s0, e0, hook, CAP_Y[layout], meta.get("allow_profanity", False)),
                        encoding="utf-8")
         mp4 = clip.with_name(f"{clip.stem}_{lang}.mp4")
-        encode(ffmpeg, src, s0, e0, video_filter(layout, ass, meta.get("focus", 0.5), meta.get("cam")), mp4)
+        encode(ffmpeg, src, s0 - off, e0 - off, video_filter(layout, ass, meta.get("focus", 0.5), meta.get("cam")), mp4)
         save_json(mp4.with_suffix(".json"), dict(meta, file=str(mp4), hook=hook, lang=lang, translated_from=str(clip)))
         print(mp4)
 

@@ -9,7 +9,7 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 
 - The source passed `source-check` permission, and this segment passed its music check.
 - Hook: get 3 options from `hook-writer` and use the best. Without it, write 3 short ones (under 8 words, no clickbait the clip doesn't pay off) and pick one.
-- Look at the source: `ffmpeg -v error -ss <peak> -i <source> -frames:v 1 jobs/<id>/frame.png`, then view the frame to choose the layout.
+- Look at the source: `.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/cut.py" jobs/<id> --pick <n> --frame` saves a frame from the middle of the clip to `jobs/<id>/frame_<n>.png`. View it to choose the layout. For a link, this first downloads the video for just that range (cached, so the cut reuses it).
 
 ## 2. Pick a layout
 
