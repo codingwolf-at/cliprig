@@ -27,7 +27,14 @@ You'll also need ffmpeg with libass for anything that burns captions (macOS: `br
 
 2. **Add a self-test for new logic.** A new branch, loop or parser gets a small assert-based check under `--self-test` in its script.
 3. **Run it for real once.** For anything that touches downloads, cutting or captions, run it on a real source with permission to clip it (CC BY works well) and say what you checked in the pull request.
-4. **Add a line to `CHANGELOG.md`** under `Unreleased`.
+4. **If you change a skill's description, run the trigger evals.** They check each skill starts on a typical request, and that unrelated requests start none. About $2 at one run per case:
+
+   ```bash
+   claude plugin eval . --ablation none --runs 1 -j 4 --no-publish
+   ```
+
+   A new skill gets an `evals/trigger-<name>/` case.
+5. **Add a line to `CHANGELOG.md`** under `Unreleased`.
 
 ## What we hold the line on
 

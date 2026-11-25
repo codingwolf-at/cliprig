@@ -1,0 +1,32 @@
+name: skill evals
+
+# Manual only: each run calls the Claude API (about $2 at one run per case).
+# Needs an ANTHROPIC_API_KEY repository secret.
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Runs per case
+        default: "1"
+
+jobs:
+  triggers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Skill trigger evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npx -y @anthropic-ai/claude-code plugin eval . --trust-plugin --ablation none \
+            --runs "${{ inputs.runs }}" -j 4 --no-publish --max-cost-usd 10 --json results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: |
+            results.json
+            evals/results/

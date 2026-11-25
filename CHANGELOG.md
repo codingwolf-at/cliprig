@@ -7,6 +7,7 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 ### Added
 
 - `doctor` skill: checks and repairs a page's setup (Python, packages, yt-dlp age, ffmpeg captions, speech model, page files, cookies, self-tests). `setup` now finishes by running it.
+- Skill trigger evals in `evals/`: one case per skill, plus prompts that must not start any Cliprig skill. Run them with `claude plugin eval .`, or from the manual "skill evals" workflow.
 
 ### Changed
 
