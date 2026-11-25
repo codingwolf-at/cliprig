@@ -264,6 +264,8 @@ Issues and pull requests are welcome. Each skill is a `SKILL.md` in `skills/`, a
 for s in music_check moments cut check review trends translate questions; do python scripts/$s.py --self-test; done
 ```
 
+Found a security problem? Please report it privately, as described in [SECURITY.md](SECURITY.md).
+
 ## Disclaimer
 
 Cliprig is an independent project. It isn't affiliated with Anthropic, Content Rewards, Whop, YouTube, Twitch or Reddit. You're responsible for following the terms of the platforms you use and the rules of each campaign you join.
