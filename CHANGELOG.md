@@ -6,7 +6,7 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ### Fixed
 
-- `moment-finder` transcription progress now shows the time taken and the time left, measured as it runs. The skill no longer promises a quarter of the audio's length: Hindi, and non-stop English talk, can transcribe close to real time.
+- `moment-finder` transcription progress now shows the time taken and the time left, measured as it runs. The skill no longer promises a quarter of the audio's length, which was far off for some sources.
 
 ### Changed
 
