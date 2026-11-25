@@ -28,6 +28,7 @@ Then say "set up my clip page". Setup asks 4 questions (page name, niche, platfo
 | `source-check` | Before any cut: is there permission to clip this source (with proof saved), and is the segment free of music (loud gaps, hidden lyrics) |
 | `moment-finder` | Ranks clip candidates in a long video, podcast or VOD from laughs and loudness, hook phrases, "most replayed" and chat spikes, cut on sentence edges |
 | `clip-cutter` | Cuts a pick into a 1080x1920 clip: fill, blur or facecam layout, word-by-word captions with swears masked, hook box, -14 LUFS audio |
+| `multilang` | Turns a finished clip into other languages: Claude translates the hook and captions, the script renders them in the same layout |
 | `hook-writer` | 3 on-screen hook options per clip in different patterns, checked against the clip, past hooks and what won on the page |
 | `rule-check` | Before posting: specs, length, required tags, banned terms and credit, plus a hand check of permission, music and campaign-only rules |
 | `learning-loop` | Logs each post, fills 12/24/72h reads, daily and weekly reviews with medians by pillar, platform, format, hour and test. Real numbers only |

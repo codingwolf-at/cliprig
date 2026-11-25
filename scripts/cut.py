@@ -105,6 +105,14 @@ def ffmpeg_with_libass():
     sys.exit("ffmpeg has no subtitles filter (libass). macOS: brew install ffmpeg-full. Linux: apt install ffmpeg.")
 
 
+def encode(ffmpeg, src, s0, e0, vf, mp4):
+    """Render [s0, e0] of src through filter graph vf: H.264 1080x1920 30 fps, AAC, -14 LUFS."""
+    run([ffmpeg, "-y", "-v", "error", "-ss", f"{s0:.2f}", "-to", f"{e0:.2f}", "-i", str(src),
+         "-filter_complex", vf, "-map", "[vo]", "-map", "0:a?", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
+         "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
+         "-ar", "48000", "-movflags", "+faststart", str(mp4)])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("job"); ap.add_argument("--pick", type=int, default=1)
@@ -131,14 +139,11 @@ def main():
     ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity), encoding="utf-8")
     out = ROOT / "media" / "edits"; out.mkdir(parents=True, exist_ok=True)
     mp4 = out / f"{d.name}_clip{a.pick}.mp4"
-    run([ffmpeg, "-y", "-v", "error", "-ss", f"{s0:.2f}", "-to", f"{e0:.2f}", "-i", c["source"],
-         "-filter_complex", video_filter(a.layout, ass, a.focus, a.cam), "-map", "[vo]", "-map", "0:a?",
-         "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-         "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
-         "-ar", "48000", "-movflags", "+faststart", str(mp4)])
+    encode(ffmpeg, c["source"], s0, e0, video_filter(a.layout, ass, a.focus, a.cam), mp4)
     info = c.get("info", {})
     save_json(mp4.with_suffix(".json"), {"file": str(mp4), "job": str(d), "pick": a.pick, "start": s0, "end": e0,
-                                         "layout": a.layout, "hook": a.hook, "source_url": info.get("webpage_url"),
+                                         "layout": a.layout, "focus": a.focus, "cam": a.cam, "captions": a.captions,
+                                         "allow_profanity": a.allow_profanity, "hook": a.hook, "source_url": info.get("webpage_url"),
                                          "source_title": info.get("title"), "source_channel": info.get("channel") or info.get("uploader")})
     print(mp4)
 
