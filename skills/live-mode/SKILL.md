@@ -21,6 +21,7 @@ Tuning, only if needed:
 
 - Too many spikes: raise `--ratio` (default 3) or `--min-msgs` (default 8). Too few in a small chat: lower them.
 - Clips start too early or late: change `--lag` (default 8 seconds of stream delay plus reaction time).
+- Busy chat but no spikes: raise `--chat-delay`, the seconds to wait for chat to arrive before judging a moment (default 15 on YouTube, whose chat arrives in late batches, and 3 on Twitch).
 - `--before` / `--after` set the clip window. `--cooldown` (45) is the minimum gap between spikes.
 
 ## 3. While it runs

@@ -6,7 +6,7 @@ spike cuts [spike-before, spike+after] into live/spike_<n>.mp4 and appends a row
 Run moments.py / cut.py on the spike clips afterwards.
 
 usage: python live.py <youtube-live-url> --minutes 60 [--before 15 --after 20 --window 10 --baseline 300
-                      --ratio 3 --min-msgs 8 --lag 8 --cooldown 45]
+                      --ratio 3 --min-msgs 8 --lag 8 --cooldown 45 --chat-delay 15]
 Stop early with Ctrl+C. Pending spikes are still cut on shutdown.
 """
 import argparse, json, re, subprocess, sys, time
@@ -211,6 +211,8 @@ def main():
     ap.add_argument("--ratio", type=float, default=3); ap.add_argument("--min-msgs", type=int, default=8)
     ap.add_argument("--cooldown", type=float, default=45)
     ap.add_argument("--lag", type=float, default=8, help="seconds to shift the clip later: stream delay + chat reaction time")
+    ap.add_argument("--chat-delay", type=int, help="seconds to wait for chat to arrive before judging a second "
+                                                   "(default: 15 on YouTube, 3 on Twitch)")
     a = ap.parse_args()
 
     d = job_dir(a.url)
@@ -227,6 +229,8 @@ def main():
 
     rec = Recorder(ld, a.url, a.minutes)
     login = twitch_login(a.url)
+    # YouTube chat reaches yt-dlp in batches ~10 s late; Twitch IRC is near real time
+    chat_delay = a.chat_delay if a.chat_delay is not None else (3 if login else 15)
     if login:
         import threading, twitch
         stop_chat = threading.Event()
@@ -262,7 +266,7 @@ def main():
             t = now()
             if rec.t0 is None and any(ld.glob("seg_*.ts")):
                 rec.t0 = t
-            e = int(t) - 3  # let chat batches land before judging a second
+            e = int(t) - chat_delay  # let chat batches land before judging a second
             elapsed_chat = e - int(start)
             if elapsed_chat >= a.window + 30 and t - last_spike >= a.cooldown and rec.t0:
                 raw = tail.total(tail.raw, e - a.window + 1, e)
