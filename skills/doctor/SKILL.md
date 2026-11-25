@@ -11,7 +11,7 @@ In the page folder:
 
 `.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py"`
 
-On Windows the interpreter is `.venv\Scripts\python.exe`. If `.venv` itself is missing or broken, re-run the install part of `setup`.
+On Windows the interpreter is `.venv/Scripts/python.exe`. If `.venv` itself is missing or broken, re-run the install part of `setup`.
 
 Each line is PASS, WARN or FAIL with the fix in brackets.
 

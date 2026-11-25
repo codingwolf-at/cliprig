@@ -4,7 +4,7 @@ Prints PASS / WARN / FAIL per check with the fix. Exit code 1 on any FAIL.
 usage: python doctor.py          (run in the page folder with the page's .venv python)
        python doctor.py --self-test
 """
-import importlib.util, re, subprocess, sys
+import importlib.util, re, shutil, subprocess, sys
 from datetime import date
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -12,7 +12,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 HERE = Path(__file__).parent
 SELF_TESTS = ["music_check", "moments", "cut", "check", "review", "trends", "translate", "questions"]
 PAGE_FILES = ["CLAUDE.md", "playbook.md", "campaigns.md", "scoreboard.csv", "yt-dlp.conf", ".gitignore"]
-UPDATE_YTDLP = 'uv pip install --python .venv/bin/python -U "yt-dlp[default]"'
+PY = f'"{Path(sys.executable).as_posix()}"'  # the interpreter running this, right on every OS
+# venvs made with uv have no pip
+UPDATE_YTDLP = (f'uv pip install --python {PY} -U "yt-dlp[default]"' if shutil.which("uv")
+                else f'{PY} -m pip install -U "yt-dlp[default]"')
 
 
 def ytdlp_age(version, today):
@@ -56,7 +59,7 @@ def run_checks(root):
     except ImportError:
         cached = False
     res.append(("PASS" if cached else "WARN", "speech model downloaded", "" if cached else
-                "first moment-finder run will download ~500 MB; get it now: .venv/bin/python -c \"from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')\""))
+                f"first moment-finder run will download ~500 MB; get it now: {PY} -c \"from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')\""))
     gone = [f for f in PAGE_FILES if not (root / f).exists()]
     res.append(("WARN" if gone else "PASS", "page files", f"missing {', '.join(gone)}: run this in the page folder, or re-run setup" if gone else ""))
     read = lambda f: (root / f).read_text(encoding="utf-8", errors="ignore") if (root / f).exists() else ""
