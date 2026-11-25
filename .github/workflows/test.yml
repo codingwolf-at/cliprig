@@ -24,7 +24,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Self-tests
         run: |
-          for s in music_check moments cut check review trends translate questions; do
+          for s in music_check moments cut check review trends translate questions doctor; do
             echo "== $s"; python "scripts/$s.py" --self-test
           done
       - name: Other scripts import

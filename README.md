@@ -6,7 +6,7 @@
   <a href="https://github.com/codingwolf-at/cliprig/actions/workflows/test.yml"><img alt="tests" src="https://github.com/codingwolf-at/cliprig/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-ffd60a?style=flat-square"></a>
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-6f5fb0?style=flat-square">
-  <img alt="14 skills" src="https://img.shields.io/badge/skills-14-6f5fb0?style=flat-square">
+  <img alt="15 skills" src="https://img.shields.io/badge/skills-15-6f5fb0?style=flat-square">
   <img alt="Python 3.10 to 3.12" src="https://img.shields.io/badge/python-3.10%E2%80%933.12-3776ab?style=flat-square">
   <img alt="No API keys" src="https://img.shields.io/badge/API%20keys-none-2ea44f?style=flat-square">
 </p>
@@ -187,6 +187,7 @@ Each step is a skill Claude runs for you. `playbook` chains them into a daily ro
 | `setup` | Installs the tools, asks 4 questions, builds your page folder |
 | `playbook` | Your day: the 7-day kickoff, then find, check, cut, approve, log, engage and report |
 | `learning-loop` | Logs every post, fills 12/24/72-hour reads, daily and weekly reviews with medians by pillar, platform, format, hour and test |
+| `doctor` | Checks and repairs your setup: Python, packages, yt-dlp age, ffmpeg captions, speech model, page files, cookies, self-tests |
 
 ## Rules it won't break
 
@@ -261,7 +262,7 @@ No. It prepares the clip, caption and credit and waits for your "yes". You post,
 Issues and pull requests are welcome. Each skill is a `SKILL.md` in `skills/`, and the scripts it runs are in `scripts/`. Scripts with logic carry a self-test, and CI runs them on macOS, Linux and Windows for every push and pull request:
 
 ```bash
-for s in music_check moments cut check review trends translate questions; do python scripts/$s.py --self-test; done
+for s in music_check moments cut check review trends translate questions doctor; do python scripts/$s.py --self-test; done
 ```
 
 Found a security problem? Please report it privately, as described in [SECURITY.md](SECURITY.md).

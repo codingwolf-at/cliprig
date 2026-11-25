@@ -33,9 +33,6 @@ Inside the page folder:
 - If an install needs a new terminal for `PATH`, say so in one line and re-check. Never spend money or add a card.
 - Speech model: download it now so the first `moment-finder` run doesn't stall on it. About 500 MB, cached once for every page on this machine:
   `.venv/bin/python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"`
-- Check the install: every script's self-test must print `self-test ok`.
-  `for s in music_check moments cut check review trends translate questions; do .venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/$s.py" --self-test || echo "FAIL $s"; done`
-  On a FAIL, show the error and fix the cause before going on.
 
 ## 4. Create the page folder
 
@@ -58,11 +55,13 @@ Create these as well:
 
 Then run `git init` in the folder. Don't commit: the human owns history.
 
+Check everything with the `doctor` skill: `.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py"`. Every line must be PASS. Fix any WARN or FAIL as `doctor` says before finishing.
+
 ## 5. Finish
 
 Tell the human, in 4 lines:
 
-1. What was installed (self-tests passed, speech model downloaded), and where the folder is.
+1. What was installed (`doctor` all PASS), and where the folder is.
 2. Next step: `campaign-finder`.
 3. New accounts: days 1-2 set up the profile and engage, no posts. First posts from the phone app.
 4. They approve every clip and post it themselves. Nothing is uploaded automatically.
