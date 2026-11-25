@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/codingwolf-at/cliprig/actions/workflows/test.yml"><img alt="tests" src="https://github.com/codingwolf-at/cliprig/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-ffd60a?style=flat-square"></a>
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-6f5fb0?style=flat-square">
   <img alt="14 skills" src="https://img.shields.io/badge/skills-14-6f5fb0?style=flat-square">
@@ -240,7 +241,7 @@ No. It prepares the clip, caption and credit and waits for your "yes". You post,
 
 ## Contributing
 
-Issues and pull requests are welcome. Each skill is a `SKILL.md` in `skills/`, and the scripts it runs are in `scripts/`. Scripts with logic carry a self-test:
+Issues and pull requests are welcome. Each skill is a `SKILL.md` in `skills/`, and the scripts it runs are in `scripts/`. Scripts with logic carry a self-test, and CI runs them on macOS, Linux and Windows for every push and pull request:
 
 ```bash
 for s in music_check moments cut check review trends translate questions; do python scripts/$s.py --self-test; done
