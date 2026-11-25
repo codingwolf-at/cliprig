@@ -10,6 +10,7 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ### Changed
 
+- `rule-check` now checks that a campaign clip is labelled as an ad (`#ad` in the caption or the platform's paid-promotion label), and the README lists it under "Rules it won't break".
 - `moment-finder` downloads only the audio of a link, which is all the ranking needs: a few hundred MB instead of gigabytes for a long VOD. `clip-cutter` and `multilang` then download video for just the clip's range, at up to 4K. `clip-cutter --frame` saves a frame for choosing the layout. Jobs made with the old full-video download still work.
 
 ### Fixed

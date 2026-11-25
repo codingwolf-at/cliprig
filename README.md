@@ -213,6 +213,7 @@ These are built into the skills, not left to good intentions:
 - **No audible music.** Every segment gets a music check: sound in the gaps between speech, and words only an unfiltered transcription hears (often lyrics).
 - **Real numbers only.** No invented rates, budgets, views or earnings, and no earnings promises.
 - **Credit every creator,** and never put words in their mouth.
+- **Paid clips are labelled as ads.** Campaign clips earn money, so each one carries `#ad` in the caption or the platform's paid-promotion label.
 - **No AI voiceover** unless a campaign allows it.
 - **One Content Rewards account per person.** Run several pages from one account.
 

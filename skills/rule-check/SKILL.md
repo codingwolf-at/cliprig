@@ -24,6 +24,7 @@ The script can't judge these. Check each and list it:
 - Permission: `media/raw/<source>/SOURCE.md` exists for this source, and this campaign covers this creator or footage.
 - Music: the segment passed `source-check` part 2.
 - Campaign items not in the script: logo or overlay, CTA, official sound and its timing, the person the campaign is about is the main focus.
+- Ad disclosure: a campaign clip earns money, so it's an ad. The caption has `#ad`, or the human will turn on the platform's paid-promotion label when posting. Say which in the report.
 - Caption and hook: true, nothing invented, no "official" wording for fan content, nothing on the playbook's skip list.
 - Not a repeat: the same clip isn't already posted to this account (`log.md`, `scoreboard.csv`).
 
@@ -31,4 +32,4 @@ The script can't judge these. Check each and list it:
 
 PASS or FAIL per check in a short list. On a FAIL, fix the cause (re-cut with `clip-cutter`, fix the caption, trim) and re-run. Don't argue with a failed check.
 
-Only after everything passes, show the human the clip, the caption and the credit, and wait for "yes". The human posts it. Never upload anything.
+Only after everything passes, show the human the clip, the caption, the credit and the ad disclosure, and wait for "yes". The human posts it. Never upload anything.
