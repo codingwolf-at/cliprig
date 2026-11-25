@@ -274,11 +274,7 @@ No. It prepares the clip, caption and credit and waits for your "yes". You post,
 
 ## Contributing
 
-Issues and pull requests are welcome. Each skill is a `SKILL.md` in `skills/`, and the scripts it runs are in `scripts/`. Scripts with logic carry a self-test, and CI runs them on macOS, Linux and Windows for every push and pull request:
-
-```bash
-for s in music_check moments cut check review trends translate questions doctor; do python scripts/$s.py --self-test; done
-```
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers how Cliprig is built, the self-tests CI runs on macOS, Linux and Windows, and what every change has to keep true. Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 Found a security problem? Please report it privately, as described in [SECURITY.md](SECURITY.md).
 
