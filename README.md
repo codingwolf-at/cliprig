@@ -112,6 +112,21 @@ Clipping pays per 1,000 views, but most of the job is grunt work: scrubbing two-
 - 📈 **Learns from real numbers.** Logs every post, reads views at 12, 24 and 72 hours, and tells you what to do more of. It never makes up a number.
 - 🔑 **No API keys, no accounts.** Runs on your machine with yt-dlp, ffmpeg and faster-whisper.
 
+## How it compares
+
+| | Cliprig | Typical hosted AI clipper |
+|---|---|---|
+| Where it runs | Your machine | Their cloud: you upload or link your videos |
+| Cost | Free and open source. You only need your Claude plan | Usually a subscription or per-minute credits |
+| Rights | Won't cut without saved proof of permission, and checks every clip for music | Usually left to you |
+| Campaign rules | Reads each campaign's brief and checks the clip against it before posting | Usually not built in |
+| Posting | Never posts. You approve every clip | Often posts or schedules for you |
+| Learning | Logs your real views and tells you what works on your page | Often an AI "virality" score before posting |
+| Setup | One-time install of Python, ffmpeg and a speech model | Nothing to install |
+| Editing | Captions, hook box and three layouts | Usually a visual editor with templates and effects |
+
+A hosted tool fits better if you want no setup or a visual editor. Cliprig fits if you clip for paid campaigns and want rights, rules and real numbers handled, with every decision staying yours.
+
 ## Quick start
 
 In Claude Code:
