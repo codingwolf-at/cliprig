@@ -8,6 +8,12 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 - `doctor` skill: checks and repairs a page's setup (Python, packages, yt-dlp age, ffmpeg captions, speech model, page files, cookies, self-tests). `setup` now finishes by running it.
 
+### Fixed
+
+- `live-mode` never fired a spike on YouTube: its chat arrives in batches about 10 seconds late, and seconds were judged after 3. It now waits 15 seconds on YouTube (`--chat-delay` to change it). In a 4-minute test on a busy stream, 0 spikes became 5.
+- Windows: a page's `CLAUDE.md` now says to use `.venv/Scripts/python.exe` wherever a skill says `.venv/bin/python`, and `doctor` prints fix commands with the interpreter actually running it (and `uv` when the venv has no `pip`).
+- The README now says Reddit often refuses `questions-to-posts`' requests, and that pasted comments always work.
+
 ## [0.1.0] - 2026-11-26
 
 First public release: 14 skills that run a short-form clip page in any niche, from finding paid campaigns to the weekly review.
