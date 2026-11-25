@@ -28,7 +28,7 @@ Inside the page folder:
 
 - Python venv: `uv venv --python 3.12 .venv` if `uv` exists, else `python3 -m venv .venv` (Python 3.10 to 3.12; faster-whisper has no wheels for newer versions yet). Then install: `uv pip install --python .venv/bin/python -r "${CLAUDE_PLUGIN_ROOT}/requirements.txt"` (or `.venv/bin/python -m pip install -r ...`). On Windows the interpreter is `.venv\Scripts\python.exe`.
 - ffmpeg with subtitle support (captions need libass). Check with `ffmpeg -hide_banner -filters | grep -w subtitles`.
-  - macOS: Homebrew's plain `ffmpeg` has no libass. `brew install ffmpeg-full`, then put `/opt/homebrew/opt/ffmpeg-full/bin` first in `PATH` when cutting.
+  - macOS: Homebrew's plain `ffmpeg` has no libass. `brew install ffmpeg-full`. No `PATH` change needed: the scripts find ffmpeg-full on their own.
   - Windows: `winget install --id Gyan.FFmpeg -e --source winget`. Linux: `sudo apt install -y ffmpeg`.
 - If an install needs a new terminal for `PATH`, say so in one line and re-check. Never spend money or add a card.
 - Speech model: download it now so the first `moment-finder` run doesn't stall on it. About 500 MB, cached once for every page on this machine:
