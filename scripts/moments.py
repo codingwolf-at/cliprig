@@ -86,6 +86,16 @@ def transcribe(wav, d):
     return words
 
 
+def mark_sentences(words):
+    """Sentence edges from . ? ! when the transcript has punctuation: Whisper's segment edges often fall mid-sentence."""
+    if not any(w["w"][-1:] in ".?!" for w in words):
+        return words
+    for i, w in enumerate(words):
+        w["b"] = i == 0 or words[i - 1]["w"][-1:] in ".?!"
+        w["eos"] = w["w"][-1:] in ".?!" or i == len(words) - 1
+    return words
+
+
 def chat_series(d, n, chat_arg):
     """Messages per second from YouTube live_chat json lines or a TwitchDownloader chat.json."""
     c = np.zeros(n)
@@ -150,7 +160,10 @@ def pick(score, words, dur, top, mn, mx):
             ws = ws[heads[0]:] if heads else ws
             tails = [i for i, x in enumerate(ws) if x.get("eos") and x["e"] >= p]
             ws = ws[:tails[-1] + 1] if tails else ws
-            s0 = max(0, ws[0]["s"] - 0.3); e0 = min(dur, ws[-1]["e"] + 0.6)
+            prev_e = max((x["e"] for x in words if x["e"] <= ws[0]["s"]), default=0)
+            next_s = min((x["s"] for x in words if x["s"] >= ws[-1]["e"]), default=dur)
+            # pads never take the previous or next sentence's words
+            s0 = max(prev_e, ws[0]["s"] - 0.3); e0 = min(dur, next_s, ws[-1]["e"] + 0.6)
         if e0 - s0 < mn:
             e0 = min(dur, s0 + mn)
         e0 = min(e0, s0 + mx)
@@ -173,7 +186,7 @@ def main():
     dur = min(float(ffprobe(vid)["format"]["duration"]), a.max_minutes * 60)
     wav, db = audio_rms(vid, d, a.max_minutes)
     n = len(db)
-    words = transcribe(wav, d)
+    words = mark_sentences(transcribe(wav, d))
     # signals
     loud = smooth(np.clip(z(db - smooth(db, 30)), 0, None), 3)          # jumps above the local level
     hype = smooth(hype_series(words, n, HYPE + (f"|{a.hype}" if a.hype else "")), 5)
@@ -219,7 +232,17 @@ if __name__ == "__main__":
         words = [{"w": "x", "s": t, "e": t + 0.5, "b": t in (10, 20, 50), "eos": t in (19, 45, 49)} for t in range(100)]
         score = np.zeros(100); score[30] = 2; score[31] = 1
         got = pick(score, words, 100.0, 2, 15, 40)
-        assert [(round(s, 1), round(e, 1), p) for s, e, p in got] == [(9.7, 46.1, 30)], got
+        assert [(round(s, 1), round(e, 1), p) for s, e, p in got] == [(9.7, 46.0, 30)], got
+        ms = mark_sentences([{"w": "office", "s": 0, "e": 0.9, "b": True}, {"w": "mates", "s": 1, "e": 1.9, "eos": True},
+                             {"w": "a", "s": 2, "e": 2.2, "b": True}, {"w": "bit.", "s": 2.3, "e": 2.6}, {"w": "So", "s": 3, "e": 3.4}])
+        assert [(x["b"], x["eos"]) for x in ms] == [(True, False), (False, False), (False, False), (False, True), (True, True)], ms
+        raw = [{"w": "no", "s": 0, "e": 1, "b": True}, {"w": "punctuation", "s": 1, "e": 2, "eos": True}]
+        assert mark_sentences([dict(x) for x in raw]) == raw, "no punctuation: keep Whisper's marks"
+        tight = [{"w": "mates", "s": 9.0, "e": 9.95}] + [{"w": "x", "s": t, "e": t + 0.5, "b": t == 10, "eos": t == 30} for t in range(10, 40)]
+        sc = np.zeros(60); sc[20] = 1
+        assert round(pick(sc, tight, 60.0, 1, 15, 40)[0][0], 2) == 9.95, "lead-in stops at the previous word's end"
+        tight.append({"w": "And", "s": 30.6, "e": 31})
+        assert round(pick(sc, tight, 60.0, 1, 15, 40)[0][1], 2) == 30.6, "tail stops where the next sentence starts"
         print("self-test ok")
     else:
         main()
