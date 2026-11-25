@@ -23,6 +23,7 @@
   <a href="#how-it-works">How it works</a> ·
   <a href="#skills">Skills</a> ·
   <a href="#rules-it-wont-break">Rules</a> ·
+  <a href="#what-leaves-your-machine">Privacy</a> ·
   <a href="#faq">FAQ</a>
 </p>
 
@@ -198,6 +199,22 @@ These are built into the skills, not left to good intentions:
 - **Credit every creator,** and never put words in their mouth.
 - **No AI voiceover** unless a campaign allows it.
 - **One Content Rewards account per person.** Run several pages from one account.
+
+## What leaves your machine
+
+Every network call Cliprig makes, and nothing else:
+
+| When | Goes to | What's sent |
+|---|---|---|
+| Reading or downloading a video | YouTube, Twitch, or the site of a link you give (through yt-dlp) | Normal viewer requests for the page, video and chat. Your YouTube cookies only if you turn them on for a bot check |
+| Live streams and Twitch chat | `gql.twitch.tv`, `irc.chat.twitch.tv` | Anonymous, read-only requests. No account |
+| Audience questions | `reddit.com` | Public JSON requests, when Reddit allows them |
+| Finding campaigns | `contentrewards.com`, `whop.com`, `clip.tech` | Claude reads the pages like a visitor. It never signs in, joins or accepts terms for you |
+| First transcription | `huggingface.co` | One download of the speech model |
+| Setup | PyPI, Homebrew, winget or apt | Installing the tools |
+| Working with Claude | Anthropic | What Claude reads in the session, like your page files, transcripts and the frames it looks at, as in any Claude Code session |
+
+The video and audio files themselves are never sent anywhere: transcription and cutting run on your machine. Cliprig has no server and no telemetry, and it never uploads to social platforms.
 
 ## Your page folder
 
