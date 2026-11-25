@@ -39,7 +39,8 @@ def summarize(posts, read, days, today):
     out.append(f"median {col}: {median(v for v, _ in scored):g}")
     line = lambda v, p: f"  {v:g}  {p.get('platform', '')}  {p.get('date', '')} {p.get('time', '')}  \"{p.get('hook', '')}\""
     out += ["top 3:"] + [line(v, p) for v, p in scored[:3]]
-    out += ["bottom 3:"] + [line(v, p) for v, p in scored[-3:][::-1]]
+    bottom = scored[max(3, len(scored) - 3):][::-1]  # never repeat a top-3 post
+    out += ["bottom 3:"] + [line(v, p) for v, p in bottom] if bottom else []
     keys = [("pillar", lambda p: p.get("pillar")), ("platform", lambda p: p.get("platform")),
             ("format", lambda p: p.get("format")), ("hour", lambda p: (p.get("time") or "")[:2] + ":00"),
             ("test", lambda p: p.get("test_name"))]
@@ -85,6 +86,10 @@ if __name__ == "__main__":
         assert out[0] == "4 posts since 2026-11-17; 3 with views_24h, 1 still missing it", out
         assert out[1] == "median views_24h: 300" and out[3].startswith("  1000  yt"), out
         assert "median by platform: yt 1000 (n=1), x 200 (n=2)" in out, out
+        assert "bottom 3:" not in out, "3 posts: no bottom list that repeats the top"
+        more = summarize(ps[:3] + [P("2026-11-22", "x", str(v)) for v in (5, 50)], "24h", 7, date(2026, 11, 23))
+        b = more.index("bottom 3:")
+        assert [l.split()[0] for l in more[b + 1:b + 3]] == ["5", "50"], more
         assert "median by hour: 09:00 1000 (n=1), 18:00 200 (n=2)" in out, out
         assert payouts([{"est_payout": "1.5", "status": "paid"}, {"est_payout": "2", "status": "paid"},
                         {"est_payout": "", "status": "pending"}]) == ["payouts: paid $3.50"]
