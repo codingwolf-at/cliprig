@@ -161,7 +161,7 @@ Each step is a skill Claude runs for you. `playbook` chains them into a daily ro
 | `campaign-finder` | Live clipping campaigns for your niche (Content Rewards and similar): pay per 1K views, budget left, views to first payout, rules. Ranked for a new or established page |
 | `trend-radar` | Recent long videos from creators you may clip, or the whole niche, ranked by views per hour, with a permission column |
 | `stream-finder` | Live streams on YouTube and Twitch ranked by viewers, and which of your creators are live right now |
-| `questions-to-posts` | Clusters the questions your audience keeps asking, then finds the moment in your sources that answers each one |
+| `questions-to-posts` | Clusters the questions your audience keeps asking, then finds the moment in your sources that answers each one. Reddit often refuses scripts; comments you paste in always work |
 
 **Make**
 
