@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Cliprig: long videos in, captioned vertical clips out" width="100%">
+  <img src="assets/banner.png" alt="Cliprig: long videos in, vertical clips out" width="100%">
 </p>
 
 <p align="center">
