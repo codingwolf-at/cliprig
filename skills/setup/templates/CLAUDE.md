@@ -2,7 +2,7 @@
 
 - Niche: [NICHE AND SOURCE TYPE]. Platforms: [PLATFORMS]. Time zone: [TIME ZONE].
 - Earn through clipping campaigns that pay per 1,000 approved views (mainly Content Rewards). Rules per campaign live in `campaigns.md`. Page rules live in `playbook.md`.
-- Run Cliprig scripts with `.venv/bin/python`, not system `python`. On Windows the same interpreter is `.venv/Scripts/python.exe`: use it wherever a Cliprig skill says `.venv/bin/python`.
+- Run Cliprig scripts with `.venv/bin/python`, not system `python`. yt-dlp is installed there too: call it as `.venv/bin/yt-dlp` (Windows: `.venv/Scripts/yt-dlp.exe`), since it isn't on `PATH`. On Windows the same interpreter is `.venv/Scripts/python.exe`: use it wherever a Cliprig skill says `.venv/bin/python`.
 - Update yt-dlp weekly with `doctor`, or: `uv pip install --python .venv/bin/python -U "yt-dlp[default]"`
 - Captions need ffmpeg with libass (macOS: `brew install ffmpeg-full`). The scripts find it without a `PATH` change.
 - If YouTube asks downloads to "confirm you're not a bot": the human exports their YouTube cookies to `cookies.txt` here, then uncomment `--cookies cookies.txt` in `yt-dlp.conf`. It works like a password: never commit it, never print it. While the line is on, yt-dlp rewrites the file on every run, so comment it out again and delete `cookies.txt` once downloads work.
