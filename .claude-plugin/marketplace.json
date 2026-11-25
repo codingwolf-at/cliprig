@@ -2,7 +2,8 @@
   "name": "cliprig",
   "description": "Clip desk for any niche: campaigns, moments, captioned vertical clips, permission and rule checks, learning loop.",
   "owner": {
-    "name": "Atul Tameshwari"
+    "name": "Atul Tameshwari",
+    "url": "https://github.com/codingwolf-at"
   },
   "plugins": [
     {
@@ -11,7 +12,17 @@
       "description": "Run a clip page in any niche with the fewest human actions. You approve every post.",
       "version": "0.1.0",
       "category": "productivity",
-      "tags": ["clipping", "shorts", "reels", "content-rewards", "video"]
+      "tags": [
+        "clipping",
+        "shorts",
+        "reels",
+        "tiktok",
+        "content-rewards",
+        "video",
+        "captions",
+        "podcast",
+        "twitch"
+      ]
     }
   ]
 }

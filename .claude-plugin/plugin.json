@@ -4,8 +4,24 @@
   "version": "0.1.0",
   "description": "Run a clip page in any niche: find paid clipping campaigns, find moments, cut captioned vertical clips, check permission and rules, learn from real numbers. You approve every post.",
   "author": {
-    "name": "Atul Tameshwari"
+    "name": "Atul Tameshwari",
+    "url": "https://github.com/codingwolf-at"
   },
-  "keywords": ["clipping", "shorts", "reels", "content-rewards", "video"],
-  "skills": ["./skills/"]
+  "homepage": "https://github.com/codingwolf-at/cliprig",
+  "repository": "https://github.com/codingwolf-at/cliprig",
+  "license": "MIT",
+  "keywords": [
+    "clipping",
+    "shorts",
+    "reels",
+    "tiktok",
+    "content-rewards",
+    "video",
+    "captions",
+    "podcast",
+    "twitch"
+  ],
+  "skills": [
+    "./skills/"
+  ]
 }
