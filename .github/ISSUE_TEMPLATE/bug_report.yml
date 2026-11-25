@@ -1,0 +1,74 @@
+name: Bug report
+description: Something in Cliprig didn't work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Never paste `cookies.txt`, passwords or other login details here.
+        Security problem? Report it privately instead, as described in SECURITY.md.
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Which skill?
+      options:
+        - setup
+        - doctor
+        - campaign-finder
+        - trend-radar
+        - stream-finder
+        - questions-to-posts
+        - moment-finder
+        - hook-writer
+        - clip-cutter
+        - multilang
+        - live-mode
+        - source-check
+        - rule-check
+        - playbook
+        - learning-loop
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you asked Claude to do, what it did, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: doctor output
+      description: In your page folder, run `.venv/bin/python <plugin folder>/scripts/doctor.py` (or ask Claude to "check my setup") and paste the result.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error or command output
+      description: The last lines of the failing command, if there was one.
+      render: text
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Cliprig version
+      description: From `.claude-plugin/plugin.json`, for example 0.1.0.
+  - type: input
+    id: source
+    attributes:
+      label: Video link (optional)
+      description: If it's about one video or stream, its public link helps reproduce it.

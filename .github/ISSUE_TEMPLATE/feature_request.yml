@@ -1,0 +1,21 @@
+name: Skill or feature idea
+description: Suggest a new skill, a niche Cliprig should handle better, or an improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's slow, missing or hard today?
+      description: The problem first. For example "stand-up clips often start mid-joke", or "I can't find campaigns for chess".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: How you'd like Cliprig to handle it. A rough idea is fine.
+  - type: input
+    id: niche
+    attributes:
+      label: Your niche
+      description: For example podcasts, stand-up, Twitch gaming, football, education.
