@@ -17,6 +17,9 @@ from common import ffprobe, is_url, job_dir, load_json, run, save_json, tool, yt
 # reactions and hook phrases that work across niches; add niche words with --hype
 HYPE = (r"no way|oh my (god|gosh)|omg|let'?s go|holy|insane|crazy|wtf|are you serious|i can'?t believe|"
         r"the truth is|here'?s the thing|nobody (knows|talks about)|biggest mistake|never again|plot twist")
+# sponsor reads: "most replayed" often peaks where viewers skip past them, so they must not become picks
+AD = (r"sponsored by|brought to you by|today'?s sponsor|use (promo )?code|with code|promo code|before checkout|"
+      r"\.?com ?(slash|/)|\d+ ?(%|percent) off|\$\d+ off|free trial|tell them\b[^.?!]{0,40}sent you")
 CHAT_HYPE = re.compile(r"(LMAO|LOL|KEKW|OMEGALUL|W+\b|CLIP|💀|😂|🔥|NO WAY|HOLY)", re.I)
 
 
@@ -70,8 +73,11 @@ def transcribe(wav, d):
     def run_on(device):
         model = WhisperModel("small", device=device, compute_type="float16" if device == "cuda" else "int8")
         segs, _ = model.transcribe(pcm, word_timestamps=True, vad_filter=True)
-        words = []
+        words, total, mark = [], len(pcm) / 16000, 300
         for s in segs:
+            if s.end >= mark:  # a sign of life on long sources
+                print(f"transcribed {int(s.end // 60)} of {int(total // 60)} min", flush=True)
+                mark = s.end + 300
             ws = [{"w": w.word.strip(), "s": round(w.start, 2), "e": round(w.end, 2)} for w in (s.words or []) if w.word.strip()]
             if ws:
                 ws[0]["b"] = ws[-1]["eos"] = True
@@ -147,9 +153,25 @@ def smooth(a, k):
     return np.convolve(a, np.ones(k) / k, mode="same")
 
 
-def pick(score, words, dur, top, mn, mx):
-    """Non-overlapping (start, end, peak) windows around the highest peaks, snapped to sentence edges."""
-    out, used = [], np.zeros(len(score), bool)
+def ad_mask(hits, gap=180, pre=45, post=5):
+    """Seconds inside sponsor reads: ad-phrase hits less than `gap` apart form one read, padded for its intro."""
+    # shortcut: a lone "use code" in normal talk also blocks ~50 s; add a flag if a niche needs those moments
+    mask, ts = np.zeros(len(hits), bool), np.flatnonzero(hits)
+    i = 0
+    while i < len(ts):
+        j = i
+        while j + 1 < len(ts) and ts[j + 1] - ts[j] < gap:
+            j += 1
+        mask[max(0, ts[i] - pre):ts[j] + post + 1] = True
+        i = j + 1
+    return mask
+
+
+def pick(score, words, dur, top, mn, mx, blocked=None):
+    """Non-overlapping (start, end, peak) windows around the highest peaks, snapped to sentence edges.
+    Windows touching `blocked` seconds (sponsor reads) are skipped."""
+    out = []
+    used = np.zeros(len(score), bool) if blocked is None else blocked.copy()
     for p in np.argsort(-score):
         if len(out) >= top or score[p] <= 0:
             break
@@ -199,7 +221,10 @@ def main():
     w_chat = 1.5 if chat.any() else 0
     score = 1.0 * loud + 0.8 * z(hype).clip(0) + w_heat * z(heat).clip(0) + w_chat * chatz
     picks = []
-    for s0, e0, p in pick(score, words, dur, a.top, a.min, a.max):
+    ads = ad_mask(hype_series(words, n, AD))
+    if ads.any():
+        print(f"skipping {ads.sum() / 60:.0f} min of sponsor reads")
+    for s0, e0, p in pick(score, words, dur, a.top, a.min, a.max, ads):
         text = " ".join(x["w"] for x in words if s0 <= x["s"] < e0)
         why = []
         if loud[p] > 1: why.append("loudness spike")
@@ -243,6 +268,20 @@ if __name__ == "__main__":
         assert round(pick(sc, tight, 60.0, 1, 15, 40)[0][0], 2) == 9.95, "lead-in stops at the previous word's end"
         tight.append({"w": "And", "s": 30.6, "e": 31})
         assert round(pick(sc, tight, 60.0, 1, 15, 40)[0][1], 2) == 30.6, "tail stops where the next sentence starts"
+        ad = [{"w": w, "s": t, "e": t + 0.5} for w, t in
+              [("sponsored", 100), ("by", 100.5), ("use", 150), ("code", 150.5), ("NEAL", 151), ("use", 900), ("code", 900.5)]]
+        hits = hype_series(ad, 1000, AD)
+        assert hits[100] == hits[150] == hits[900] == 1 and hits.sum() == 3, np.flatnonzero(hits)
+        m = ad_mask(hits)
+        assert m[55] and m[155] and not m[54] and not m[156] and m[855] and m[905] and not m[300], np.flatnonzero(m)
+        assert hype_series([{"w": "superpower", "s": 5, "e": 6}, {"w": ".com", "s": 6, "e": 7}, {"w": "slash", "s": 7, "e": 8}], 10, AD).sum() == 1
+        said = lambda t: [{"w": w, "s": i, "e": i + 0.5} for i, w in enumerate(t.split())]
+        assert hype_series(said("tell them blocks with Neil Brennan, sent you"), 10, AD).sum() == 1
+        assert hype_series(said("my mom sent you a text"), 10, AD).sum() == 0, "ordinary talk is not an ad"
+        assert hype_series([{"w": "50", "s": 5, "e": 6}, {"w": "%", "s": 6, "e": 7}, {"w": "off", "s": 7, "e": 8}], 10, AD).sum() == 1
+        sc = np.zeros(100); sc[30] = 2; sc[80] = 1
+        blk = np.zeros(100, bool); blk[40:45] = True
+        assert [p for _, _, p in pick(sc, words, 100.0, 2, 15, 40, blk)] == [80], "a window touching an ad is skipped"
         print("self-test ok")
     else:
         main()

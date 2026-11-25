@@ -24,7 +24,7 @@ Options:
 - `--max-minutes`: only the first 90 minutes are used by default. Raise it for long podcasts.
 - `--chat chat.json`: a Twitch VOD chat exported with TwitchDownloader. YouTube chat replay is fetched on its own.
 
-Transcription runs on the CPU unless there is an NVIDIA GPU, and takes roughly a quarter of the audio's length on an Apple M3 (slower on older laptops). For anything over 15 minutes, run it in the background and say how long to expect. Results are cached in `jobs/<id>/`, so a re-run with new options is fast.
+Transcription runs on the CPU unless there is an NVIDIA GPU, and takes roughly a quarter of the audio's length on an Apple M3 (slower on older laptops). For anything over 15 minutes, run it in the background and say how long to expect. It prints a progress line every 5 minutes of audio, so don't pipe it through `tail`. Sponsor reads ("use code", "sponsored by") never become candidates. Results are cached in `jobs/<id>/`, so a re-run with new options is fast.
 
 ## 3. Review
 
