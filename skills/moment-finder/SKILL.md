@@ -24,7 +24,7 @@ Options:
 - `--max-minutes`: only the first 90 minutes are used by default. Raise it for long podcasts.
 - `--chat chat.json`: a Twitch VOD chat exported with TwitchDownloader. YouTube chat replay is fetched on its own.
 
-Transcription runs on the CPU unless there is an NVIDIA GPU, and takes roughly a quarter of the audio's length on an Apple M3 (slower on older laptops). For anything over 15 minutes, run it in the background and say how long to expect. It prints a progress line every 5 minutes of audio, so don't pipe it through `tail`. Sponsor reads ("use code", "sponsored by") never become candidates. Results are cached in `jobs/<id>/`, so a re-run with new options is fast.
+Transcription uses an NVIDIA GPU, or the Apple GPU on a Mac (an experimental backend, with the CPU as fallback). Non-English audio is translated to English as it's transcribed: the hook and sponsor phrases are English, and it's much faster. On an M3, 10 minutes of Hindi took about half a minute; transcribing Hindi as Hindi on the CPU ran at about real time. So `candidates.md` is in English for a non-English source, and `clip-cutter` captions the clip in the spoken language. For anything over 15 minutes, run it in the background. It prints a progress line every 5 minutes of audio with the time taken and the time left, so don't pipe it through `tail`. Give the user the time left from that line, not a guess. Sponsor reads ("use code", "sponsored by") never become candidates. Results are cached in `jobs/<id>/`, so a re-run with new options is fast.
 
 ## 3. Review
 

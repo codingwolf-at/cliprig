@@ -8,11 +8,11 @@ Writes jobs/<id>/candidates.md + candidates.json.
 usage: python moments.py <url-or-file> [--top 8] [--min 15] [--max 40] [--hype "phrase|phrase"] [--chat chat.json] [--max-minutes 90]
        python moments.py --self-test
 """
-import argparse, bisect, json, math, re, sys, wave
+import argparse, bisect, json, math, re, sys, time, wave
 from pathlib import Path
 import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ffprobe, is_url, job_dir, load_json, run, save_json, tool, ytdlp_base, ytdlp_json
+from common import ffprobe, is_url, job_dir, load_json, read_pcm, run, save_json, tool, whisper_run, ytdlp_base, ytdlp_json
 
 # reactions and hook phrases that work across niches; add niche words with --hype
 HYPE = (r"no way|oh my (god|gosh)|omg|let'?s go|holy|insane|crazy|wtf|are you serious|i can'?t believe|"
@@ -57,37 +57,35 @@ def audio_rms(vid, d, max_min):
 
 
 def transcribe(wav, d):
-    """Words with timestamps; b/eos mark the first/last word of each transcript segment (roughly a sentence)."""
+    """Words with timestamps, in English: other languages are translated, so the English hook and sponsor phrases match,
+    and it runs ~5x faster on CPU than transcribing Hindi. lang.txt keeps the spoken language for clip-cutter's captions.
+    b/eos mark the first/last word of each transcript segment (roughly a sentence)."""
     out = d / "transcript.json"
     if out.exists():
         return load_json(out)
-    from faster_whisper import WhisperModel
-    try:
-        import ctranslate2
-        cuda = ctranslate2.get_cuda_device_count() > 0
-    except Exception:
-        cuda = False
-    with wave.open(str(wav)) as w:  # pass samples directly (16 kHz mono), no extra decoder needed
-        pcm = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
+    pcm = read_pcm(wav)  # pass samples directly (16 kHz mono), no extra decoder needed
 
-    def run_on(device):
-        model = WhisperModel("small", device=device, compute_type="float16" if device == "cuda" else "int8")
-        segs, _ = model.transcribe(pcm, word_timestamps=True, vad_filter=True)
-        words, total, mark = [], len(pcm) / 16000, 300
+    def run_on(model):
+        lang = model.detect_language(pcm, vad_filter=True, language_detection_segments=3)[0]
+        (d / "lang.txt").write_text(lang)
+        kw = {}
+        if lang != "en":  # greedy: beam search made Hindi slower and looped into junk
+            print(f"spoken language: {lang}; ranking on an English translation", flush=True)
+            kw = dict(task="translate", language=lang, beam_size=1, condition_on_previous_text=False)
+        segs, _ = model.transcribe(pcm, word_timestamps=True, vad_filter=True, **kw)
+        words, total, mark, t0 = [], len(pcm) / 16000, 300, time.time()
         for s in segs:
-            if s.end >= mark:  # a sign of life on long sources
-                print(f"transcribed {int(s.end // 60)} of {int(total // 60)} min", flush=True)
+            if s.end >= mark:  # a sign of life on long sources, with a measured ETA: speed varies a lot by language
+                took = time.time() - t0
+                print(f"transcribed {int(s.end // 60)} of {int(total // 60)} min in {took / 60:.0f} min, "
+                      f"about {took / s.end * (total - s.end) / 60:.0f} min left", flush=True)
                 mark = s.end + 300
             ws = [{"w": w.word.strip(), "s": round(w.start, 2), "e": round(w.end, 2)} for w in (s.words or []) if w.word.strip()]
             if ws:
                 ws[0]["b"] = ws[-1]["eos"] = True
                 words += ws
         return words
-    try:
-        words = run_on("cuda" if cuda else "cpu")
-    except RuntimeError as e:  # GPU present but CUDA libraries missing: fall back to CPU
-        print(f"GPU transcription unavailable ({str(e)[:80]}), using CPU")
-        words = run_on("cpu")
+    words = whisper_run(run_on)
     save_json(out, words)
     return words
 

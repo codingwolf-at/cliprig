@@ -23,6 +23,7 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 
 - `--start` / `--end` (seconds in the source) trim the candidate. With an unused `--pick` number they cut any range of the source, for example a moment from `questions-to-posts`. Most clips work at 7-30 seconds and within the campaign's length rules. End on the payoff.
 - Captions mask swears and always mask slurs. `--allow-profanity` only if the campaign and platform allow it. `--captions none` if the source already has burned-in captions.
+- For a non-English source, the clip's range is transcribed again in the spoken language for the captions (Whisper `medium`, under a minute on a Mac GPU; the first time downloads about 1.5 GB).
 
 It writes `media/edits/<job>_clip<n>.mp4` and a `.json` with times, layout, hook and source. Re-running with the same pick overwrites it.
 

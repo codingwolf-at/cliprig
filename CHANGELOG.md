@@ -4,6 +4,15 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Fixed
+
+- `moment-finder` transcription progress now shows the time taken and the time left, measured as it runs. The skill no longer promises a quarter of the audio's length: Hindi, and non-stop English talk, can transcribe close to real time.
+
+### Changed
+
+- `moment-finder` translates non-English audio to English while transcribing: about 30x faster for Hindi on an Apple GPU and 5x on the CPU, and the English hook and sponsor phrases now match. Transcription uses the Apple GPU on Macs, falling back to the CPU.
+- `clip-cutter` captions non-English clips in the spoken language, transcribing just the clip's range with Whisper `medium`.
+
 ## [0.2.0] - 2026-11-26
 
 A new `doctor` skill, much smaller downloads, and fixes from the first end-to-end run driven by Claude.

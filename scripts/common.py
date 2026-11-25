@@ -62,6 +62,36 @@ def load_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def read_pcm(wav, start=0.0, end=None):
+    """Samples of a 16 kHz mono wav as float32, optionally only [start, end] seconds: Whisper takes them directly."""
+    import wave
+    import numpy as np
+    with wave.open(str(wav)) as w:
+        a = min(int(start * 16000), w.getnframes())
+        w.setpos(a)
+        n = w.getnframes() - a if end is None else max(0, min(int(end * 16000), w.getnframes()) - a)
+        return np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float32) / 32768
+
+
+def whisper_run(fn, size="small"):
+    """fn(model) on the fastest device that works: NVIDIA GPU, then Apple GPU (ctranslate2's experimental MPS
+    backend, ~30x faster than CPU on an M3 for Hindi), then CPU. A device that fails falls through to the next."""
+    from faster_whisper import WhisperModel
+    try:
+        import ctranslate2
+        devices = ["cuda"] if ctranslate2.get_cuda_device_count() > 0 else []
+    except Exception:
+        devices = []
+    devices += (["mps"] if sys.platform == "darwin" else []) + ["cpu"]
+    for i, dev in enumerate(devices):
+        try:
+            return fn(WhisperModel(size, device=dev, compute_type="float16" if dev == "cuda" else "int8"))
+        except (RuntimeError, ValueError) as e:  # libraries missing, or a ctranslate2 build without this backend
+            if dev == "cpu":
+                raise
+            print(f"{dev} transcription unavailable ({str(e)[:80]}), using {devices[i + 1]}", flush=True)
+
+
 def permitted_text(root):
     """Lowercased text of the files that name creators the page may clip."""
     files = [root / "campaigns.md", root / "watchlist.md", *root.glob("media/raw/*/SOURCE.md")]

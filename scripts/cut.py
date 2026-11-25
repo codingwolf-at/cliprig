@@ -11,7 +11,7 @@ usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [
 import argparse, re, shutil, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ROOT, load_json, run, save_json, tool, video_source
+from common import ROOT, load_json, read_pcm, run, save_json, tool, video_source, whisper_run
 
 W, H = 1080, 1920
 CAP_Y = {"fill": 1380, "blur": 1460, "facecam": 1120}
@@ -19,6 +19,22 @@ CAM_H = 730  # facecam layout: top panel height (~38%); must be even or yuv420p 
 
 SLURS = re.compile(r"\b(nigg\w*|n[i1]gg?a\w*|f[a@]gg?\w*|retard\w*|tranny\w*|chink\w*|spic\w*|kike\w*)\b", re.I)
 SWEARS = re.compile(r"\b(fuck\w*|motherfuck\w*|shit\w*|bitch\w*|cunt\w*|dick\w*|pussy\w*|asshole\w*|bastard\w*|whore\w*|slut\w*)\b", re.I)
+
+
+def spoken_words(d, s0, e0):
+    """Caption words in the language spoken. moment-finder ranks non-English audio on an English translation,
+    whose word times are rough, so the clip's range is transcribed again in its own language (a few seconds)."""
+    words = load_json(d / "transcript.json")
+    lang = (d / "lang.txt").read_text().strip() if (d / "lang.txt").exists() else "en"
+    if lang == "en" or not (d / "audio.wav").exists():
+        return words
+
+    def go(model):
+        segs, _ = model.transcribe(read_pcm(d / "audio.wav", s0, e0), language=lang, word_timestamps=True, vad_filter=True)
+        return [{"w": w.word.strip(), "s": round(s0 + w.start, 2), "e": round(s0 + w.end, 2)}
+                for s in segs for w in (s.words or []) if w.word.strip()]
+    print(f"transcribing the clip in its language ({lang}) for captions", flush=True)
+    return whisper_run(go, "medium")
 
 
 def ts(t):
@@ -141,7 +157,7 @@ def main():
         run([ffmpeg, "-y", "-v", "error", "-ss", f"{(s0 + e0) / 2 - off:.2f}", "-i", src, "-frames:v", "1", str(png)])
         print(png)
         return
-    words = load_json(d / "transcript.json") if a.captions == "word" else []
+    words = spoken_words(d, s0, e0) if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"
     ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity), encoding="utf-8")
     out = ROOT / "media" / "edits"; out.mkdir(parents=True, exist_ok=True)
