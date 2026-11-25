@@ -40,6 +40,63 @@ A real run, not a mock-up:
 3. `source-check` ran its music check on moment #2 and flagged one 2-second gap for a person to listen to before posting.
 4. `clip-cutter` cut moment #2 into a 38-second 1080×1920 clip with the hook "He doesn't remember helping me", and `rule-check` passed it.
 
+<details>
+<summary><b>See the whole session</b>: from a link to "ready for your yes"</summary>
+
+<br>
+
+Condensed from the run above. Command output is copied as it ran; Claude's replies are shortened.
+
+> **You:** find the moments in https://www.youtube.com/watch?v=KfnFbvwm-KQ
+
+**Cliprig:** Permission: **PASS**. The video page shows "Creative Commons Attribution license (reuse allowed)". Proof saved to `media/raw/blocks-josh-johnson/SOURCE.md`. Scanning the first 10 minutes of the 86-minute episode:
+
+```
+signals: loudness, transcript (1933 words), most replayed
+1. 0:17-0:55 (37s)  loudness spike  "Yeah. So I was like, I always felt like I was Devin's friend..."
+2. 1:12-1:51 (39s)  hook words      "Remember when I was like, oh yeah, I don't know what to wear..."
+3. 4:56-5:32 (36s)  overall energy  "Here's a chance to like learn about the person..."
+4. 5:37-6:08 (31s)  hook words      "If I get into an Uber and I'm texting..."
+5. 6:24-7:03 (38s)  hook words      "I don't know, I'd go get Quince and all my advertisements..."
+6. 8:46-9:22 (36s)  hook words      "And then it was, you gave me like six months of the box..."
+```
+
+Dropped #5: it's an ad read. Best pick: **#2**. Josh remembers Neal setting him up with clothes, and Neal has no memory of it.
+
+> **You:** cut 2
+
+**Cliprig:** Music check on 1:10–1:53:
+
+```
+LOUD GAP 82.5s-84.4s at -15 dBFS: listen for music under it
+```
+
+The gap sits between "No. Imagine somebody." and the repeat of that line, so it's most likely laughter. Listen to 1:22–1:24 before posting. One speaker, centred, so the `fill` layout. Rule check on the cut:
+
+```
+PASS  resolution 1080x1920  [1080x1920]
+PASS  fps about 30  [30.00]
+PASS  has audio
+PASS  duration 7-60s  [38.6s]
+PASS  no banned terms in hook/caption
+PASS  credit in caption
+RESULT: PASS
+```
+
+Ready for your yes:
+
+| | |
+|---|---|
+| File | `media/edits/kfnfbvwm-kq-aa48498c_clip2.mp4` |
+| Platforms | YouTube Shorts, Instagram Reels |
+| Hook | He doesn't remember helping me |
+| Caption | He doesn't remember helping me. Clip from Blocks Podcast with Neal Brennan and Josh Johnson. #standup #comedy |
+| Before posting | Listen to 1:22–1:24 (flagged gap) |
+
+Nothing is uploaded. You post it.
+
+</details>
+
 <sub>Demo source: <a href="https://www.youtube.com/watch?v=KfnFbvwm-KQ">Josh Johnson | Blocks Podcast w/ Neal Brennan</a> by Neal Brennan, licensed <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>. Changes: a 10-second excerpt, cropped to 9:16, with captions and a hook added, shown beside the original. No endorsement implied.</sub>
 
 ## Why Cliprig
