@@ -10,7 +10,7 @@
       "name": "cliprig",
       "source": "./",
       "description": "Run a clip page in any niche with the fewest human actions. You approve every post.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "category": "productivity",
       "tags": [
         "clipping",

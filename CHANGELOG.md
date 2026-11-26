@@ -4,6 +4,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-26
+
+In wide two-person shots the crop follows whoever is talking, captions can be masked in any language, questions-to-posts can use Reddit's official API, and fixes for sentence edges and Windows setup.
+
 ### Added
 
 - `clip-cutter --mask "word|word"`: masks more caption words in any language. For a non-English clip, it prints the captions so Claude can find swears and slurs the English lists miss and re-cut with `--mask`.
@@ -88,7 +92,8 @@ First public release: 14 skills that run a short-form clip page in any niche, fr
 - Caption swear masking is English only. Translated captions are masked by hand.
 - Sentence edges treat abbreviations like "Mr." as the end of a sentence.
 
-[Unreleased]: https://github.com/codingwolf-at/cliprig/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/codingwolf-at/cliprig/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/codingwolf-at/cliprig/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/codingwolf-at/cliprig/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/codingwolf-at/cliprig/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/codingwolf-at/cliprig/releases/tag/v0.1.0
