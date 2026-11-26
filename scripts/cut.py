@@ -4,11 +4,11 @@
 hook box in the first seconds, loudness normalised to -14 LUFS.
 Writes media/edits/<job>_clip<n>.mp4 + .json (metadata for rule checks).
 
-usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [--focus 0.5] [--cam x:y:w:h]
+usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [--focus auto|0.5] [--cam x:y:w:h]
                      [--hook "TEXT"] [--captions word|none] [--allow-profanity] [--start SEC --end SEC]
        python cut.py --self-test
 """
-import argparse, re, shutil, subprocess, sys
+import argparse, hashlib, os, re, shutil, subprocess, sys, urllib.request
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from common import ROOT, load_json, read_pcm, run, save_json, tool, video_source, whisper_run
@@ -16,6 +16,8 @@ from common import ROOT, load_json, read_pcm, run, save_json, tool, video_source
 W, H = 1080, 1920
 CAP_Y = {"fill": 1380, "blur": 1460, "facecam": 1120}
 CAM_H = 730  # facecam layout: top panel height (~38%); must be even or yuv420p loses a row per panel
+YUNET = ("https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
+         "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4")
 
 SLURS = re.compile(r"\b(nigg\w*|n[i1]gg?a\w*|f[a@]gg?\w*|retard\w*|tranny\w*|chink\w*|spic\w*|kike\w*)\b", re.I)
 SWEARS = re.compile(r"\b(fuck\w*|motherfuck\w*|shit\w*|bitch\w*|cunt\w*|dick\w*|pussy\w*|asshole\w*|bastard\w*|whore\w*|slut\w*)\b", re.I)
@@ -98,17 +100,85 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return hdr + "\n".join(ev) + "\n"
 
 
+def crop_x(focus):
+    """Crop x for a focus (0 = left edge, 1 = right edge), or per shot as [[t, focus], ...] with t from the clip start."""
+    if not isinstance(focus, list):
+        return f"(iw-{W})*{focus}"
+    e = str(focus[-1][1])
+    for (_, f), (t, _) in zip(reversed(focus[:-1]), reversed(focus[1:])):
+        e = f"if(lt(t,{t}),{f},{e})"
+    return f"'(iw-{W})*{e}'"
+
+
+def shots(cuts, dur, min_len=1.0):
+    """[(start, end), ...] from camera-cut times, folding shots shorter than min_len into the one before."""
+    keep = [0.0]
+    for t in sorted(cuts):
+        if t - keep[-1] >= min_len and dur - t >= min_len:
+            keep.append(t)
+    return list(zip(keep, keep[1:] + [dur]))
+
+
+def focus_for(faces, fw, cw, last=0.5):
+    """Crop focus that keeps the faces in frame. faces: [(x, w), ...] in a frame fw wide; cw: crop width.
+    Faces at least half the size of the largest count; if they all fit, centre on them, else on the largest."""
+    if not faces or fw <= cw:
+        return last
+    big = max(w for _, w in faces)
+    near = [(x, w) for x, w in faces if w >= big / 2]
+    a, b = min(x for x, _ in near), max(x + w for x, w in near)
+    if b - a > 0.9 * cw:
+        x, w = max(near, key=lambda f: f[1]); a, b = x, x + w
+    return round(float(min(1.0, max(0.0, ((a + b) / 2 - cw / 2) / (fw - cw)))), 3)
+
+
+def yunet():
+    """Path of OpenCV's YuNet face model (230 KB), downloaded once and checked against its hash."""
+    p = Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".cache") / "cliprig" / "face_detection_yunet_2023mar.onnx"
+    if not p.exists():
+        data = urllib.request.urlopen(YUNET[0], timeout=60).read()
+        if hashlib.sha256(data).hexdigest() != YUNET[1]:
+            sys.exit("the face model download didn't match its checksum; try again, or use --focus 0.5")
+        p.parent.mkdir(parents=True, exist_ok=True); p.write_bytes(data)
+    return str(p)
+
+
+def auto_focus(ffmpeg, src, s0, e0):
+    """Per-shot crop focus that follows faces: [[t, focus], ...], t from the clip start. 0.5 without OpenCV."""
+    try:
+        import cv2, numpy as np
+    except ImportError:
+        print("OpenCV is missing (run the doctor skill), so the crop stays centred")
+        return 0.5
+    r = run([ffmpeg, "-hide_banner", "-ss", f"{s0:.2f}", "-to", f"{e0:.2f}", "-i", str(src), "-an",
+             "-vf", "scale=320:-2,select='gt(scene,0.3)',showinfo", "-f", "null", "-"], capture=True)
+    det, out, last = cv2.FaceDetectorYN.create(yunet(), "", (320, 320), 0.7), [], 0.5
+    for a, b in shots([float(t) for t in re.findall(r"pts_time:([\d.]+)", r.stderr)], e0 - s0):
+        png = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{s0 + (a + b) / 2:.2f}", "-i", str(src), "-frames:v", "1",
+                              "-vf", "scale=640:-2", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True).stdout
+        img = cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_COLOR) if png else None
+        if img is None:
+            continue
+        h, w = img.shape[:2]
+        det.setInputSize((w, h))
+        faces = det.detect(img)[1]
+        last = focus_for([(f[0], f[2]) for f in (faces if faces is not None else [])], w, h * W / H, last)
+        if not out or abs(last - out[-1][1]) > 0.02:
+            out.append([round(a, 2), last])
+    return out if len(out) > 1 else (out[0][1] if out else 0.5)
+
+
 def video_filter(layout, ass, focus=0.5, cam=None):
-    """Layout + burned-caption filter graph ending in [vo]."""
+    """Layout + burned-caption filter graph ending in [vo]. focus: a number, or per shot (see crop_x)."""
     if layout == "fill":  # crop the frame to 9:16, centred on `focus` (0 = left edge, 1 = right edge)
-        v = f"[0:v]scale=-2:{H},crop={W}:{H}:(iw-{W})*{focus}:0[v]"
+        v = f"[0:v]scale=-2:{H},crop={W}:{H}:{crop_x(focus)}:0[v]"
     elif layout == "blur":  # whole frame over a blurred copy of itself
         v = (f"[0:v]split[a][b];[a]scale=-2:{H},crop={W}:{H},boxblur=24:2,eq=brightness=-0.08[bg];"
              f"[b]scale={W}:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2-80[v]")
     else:  # facecam: the cam box on top, the rest of the frame below
         x, y, w, h = map(float, cam.split(":"))
         v = (f"[0:v]split[a][b];[a]crop=iw*{w}:ih*{h}:iw*{x}:ih*{y},scale={W}:{CAM_H}:force_original_aspect_ratio=increase,"
-             f"crop={W}:{CAM_H}[cam];[b]scale=-2:{H - CAM_H},crop={W}:{H - CAM_H}:(iw-{W})*{focus}:0[main];[cam][main]vstack[v]")
+             f"crop={W}:{CAM_H}[cam];[b]scale=-2:{H - CAM_H},crop={W}:{H - CAM_H}:{crop_x(focus)}:0[main];[cam][main]vstack[v]")
     sub = str(ass).replace("\\", "/").replace(":", "\\:")
     return v + f";[v]fps=30,subtitles='{sub}'[vo]"
 
@@ -135,7 +205,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("job"); ap.add_argument("--pick", type=int, default=1)
     ap.add_argument("--layout", choices=["fill", "blur", "facecam"], default="blur")
-    ap.add_argument("--focus", type=float, default=0.5, help="horizontal centre of the crop, 0-1 (fill and facecam)")
+    ap.add_argument("--focus", default="auto", help="horizontal centre of the crop, 0-1 (fill and facecam). "
+                    "auto (default): fill follows the faces shot by shot; facecam uses 0.5")
     ap.add_argument("--cam", help="facecam box as x:y:w:h fractions of the frame")
     ap.add_argument("--hook", default="")
     ap.add_argument("--captions", choices=["word", "none"], default="word")
@@ -145,8 +216,11 @@ def main():
     a = ap.parse_args()
     if a.layout == "facecam" and not a.cam:
         sys.exit("--layout facecam needs --cam x:y:w:h (grab a frame and measure the cam box)")
-    if not 0 <= a.focus <= 1:
-        sys.exit("--focus must be between 0 and 1")
+    if a.focus != "auto":
+        try:
+            a.focus = float(a.focus); assert 0 <= a.focus <= 1
+        except (ValueError, AssertionError):
+            sys.exit("--focus must be auto or a number between 0 and 1")
     ffmpeg = ffmpeg_with_libass()
     d = Path(a.job); c = load_json(d / "candidates.json")
     pick = next((x for x in c["candidates"] if x["n"] == a.pick), None)
@@ -162,6 +236,9 @@ def main():
     words = spoken_words(d, s0, e0) if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"
     ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity), encoding="utf-8")
+    if a.focus == "auto":
+        a.focus = auto_focus(ffmpeg, src, s0 - off, e0 - off) if a.layout == "fill" else 0.5
+        print(f"crop focus: {a.focus}")
     out = ROOT / "media" / "edits"; out.mkdir(parents=True, exist_ok=True)
     mp4 = out / f"{d.name}_clip{a.pick}.mp4"
     encode(ffmpeg, src, s0 - off, e0 - off, video_filter(a.layout, ass, a.focus, a.cam), mp4)
@@ -181,6 +258,14 @@ if __name__ == "__main__":
         assert [[x["w"] for x in g] for g in groups_of(ws)] == [["one", "two,"], ["three", "four"], ["five"]]
         ass = build_ass(ws, 0, 3, "HOOK", 1400)
         assert ass.count("Style: Cap") == 1 and ass.count(",Cap,") == 5 and ",Hook," in ass
+        assert shots([0.4, 5.0, 5.6, 9.7], 10.0) == [(0.0, 5.0), (5.0, 10.0)], "short shots fold into the one before"
+        assert focus_for([], 1920, 608, 0.3) == 0.3, "no face: keep the last focus"
+        assert focus_for([(1700, 200)], 1920, 608) == 1.0 and focus_for([(860, 200)], 1920, 608) == 0.5
+        assert focus_for([(760, 180), (980, 180)], 1920, 608) == 0.5, "two faces that fit: centre between them"
+        assert focus_for([(200, 200), (1700, 220)], 1920, 608) == 1.0, "too far apart: the larger face"
+        assert focus_for([(200, 200), (1500, 40)], 1920, 608) == 0.0, "small background faces don't count"
+        assert crop_x(0.5) == "(iw-1080)*0.5"
+        assert crop_x([[0, 0.2], [3.5, 0.8], [7, 0.5]]) == "'(iw-1080)*if(lt(t,3.5),0.2,if(lt(t,7),0.8,0.5))'"
         print("self-test ok")
     else:
         main()

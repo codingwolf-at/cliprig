@@ -41,7 +41,7 @@ def run_checks(root):
     v = sys.version_info
     res.append(("PASS" if (3, 10) <= v[:2] <= (3, 12) else "FAIL", f"Python {v.major}.{v.minor}",
                 "" if (3, 10) <= v[:2] <= (3, 12) else "use Python 3.10-3.12 for .venv (faster-whisper has no wheels for newer ones)"))
-    missing = [p for p in ("faster_whisper", "numpy", "requests", "yt_dlp") if importlib.util.find_spec(p) is None]
+    missing = [p for p in ("cv2", "faster_whisper", "numpy", "requests", "yt_dlp") if importlib.util.find_spec(p) is None]
     res.append(("FAIL" if missing else "PASS", "packages installed", f"missing {', '.join(missing)}: reinstall requirements.txt" if missing else ""))
     if "yt_dlp" not in missing:
         from yt_dlp.version import __version__ as ver

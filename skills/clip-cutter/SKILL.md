@@ -13,7 +13,7 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 
 ## 2. Pick a layout
 
-- `fill`: crop the frame to fill 9:16. Best for one speaker or action in one spot. Set `--focus` (0 = left edge, 0.5 = centre, 1 = right edge) so the face or action stays in frame.
+- `fill`: crop the frame to fill 9:16. Best for one speaker at a time, including podcasts that cut between cameras. By default (`--focus auto`) the crop follows the faces shot by shot, and the clip's `.json` records where. For action with no face in it, set `--focus` yourself (0 = left edge, 0.5 = centre, 1 = right edge).
 - `blur`: the whole frame centred over a blurred copy. Use for two people side by side, wide shots, slides or screens where cropping would cut something off.
 - `facecam`: a camera box on top, the rest of the frame below. Use for streams or videos with a picture-in-picture cam. Measure the box on the frame as `--cam x:y:w:h` in fractions of the frame (for example `0.72:0.04:0.26:0.28`). `--focus` moves the lower crop.
 

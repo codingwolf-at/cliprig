@@ -228,6 +228,7 @@ Every network call Cliprig makes, and nothing else:
 | Audience questions | `reddit.com` | Public JSON requests, when Reddit allows them |
 | Finding campaigns | `contentrewards.com`, `whop.com`, `clip.tech` | Claude reads the pages like a visitor. It never signs in, joins or accepts terms for you |
 | First transcription | `huggingface.co` | One download of the speech model |
+| First `fill` clip | `github.com` (opencv_zoo) | One download of the face model (230 KB), checked against its hash |
 | Setup | PyPI, Homebrew, winget or apt | Installing the tools |
 | Working with Claude | Anthropic | What Claude reads in the session, like your page files, transcripts and the frames it looks at, as in any Claude Code session |
 
