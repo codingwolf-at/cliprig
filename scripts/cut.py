@@ -117,6 +117,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return hdr + "\n".join(ev) + "\n"
 
 
+def page_style(text):
+    """The caption style a playbook.md names ("Caption style: clean"), or bold."""
+    m = re.search(r"caption style:\s*`?(\w+)", text, re.I)
+    return m.group(1).lower() if m and m.group(1).lower() in STYLES else "bold"
+
+
 def crop_x(focus):
     """Crop x for a focus (0 = left edge, 1 = right edge), or per shot as [[t, focus], ...] with t from the clip start."""
     if not isinstance(focus, list):
@@ -227,7 +233,7 @@ def main():
     ap.add_argument("--cam", help="facecam box as x:y:w:h fractions of the frame")
     ap.add_argument("--hook", default="")
     ap.add_argument("--captions", choices=["word", "none"], default="word")
-    ap.add_argument("--style", choices=list(STYLES), default="bold", help="caption look; the page's playbook.md names one")
+    ap.add_argument("--style", choices=list(STYLES), help="caption look for this clip only; default: the style playbook.md names")
     ap.add_argument("--allow-profanity", action="store_true", help="keep swear words in captions (slurs are always masked)")
     ap.add_argument("--start", type=float); ap.add_argument("--end", type=float)
     ap.add_argument("--frame", action="store_true", help="save one frame from the middle of the clip to choose a layout, then stop")
@@ -251,6 +257,10 @@ def main():
         run([ffmpeg, "-y", "-v", "error", "-ss", f"{(s0 + e0) / 2 - off:.2f}", "-i", src, "-frames:v", "1", str(png)])
         print(png)
         return
+    if not a.style:
+        pb = ROOT / "playbook.md"
+        a.style = page_style(pb.read_text(encoding="utf-8") if pb.exists() else "")
+        print(f"caption style: {a.style} (from playbook.md)")
     words = spoken_words(d, s0, e0) if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"
     ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity, a.style), encoding="utf-8")
@@ -286,6 +296,8 @@ if __name__ == "__main__":
         assert focus_for([(760, 180), (980, 180)], 1920, 608) == 0.5, "two faces that fit: centre between them"
         assert focus_for([(200, 200), (1700, 220)], 1920, 608) == 1.0, "too far apart: the larger face"
         assert focus_for([(200, 200), (1500, 40)], 1920, 608) == 0.0, "small background faces don't count"
+        assert page_style("4. Captions, large. Caption style: clean (`bold`: white caps; `box`: ...)") == "clean"
+        assert page_style("Caption style: `box`") == "box" and page_style("Caption style: neon") == "bold" and page_style("") == "bold"
         assert crop_x(0.5) == "(iw-1080)*0.5"
         assert crop_x([[0, 0.2], [3.5, 0.8], [7, 0.5]]) == "'(iw-1080)*if(lt(t,3.5),0.2,if(lt(t,7),0.8,0.5))'"
         print("self-test ok")

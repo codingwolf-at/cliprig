@@ -19,10 +19,10 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 
 ## 3. Run
 
-`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/cut.py" jobs/<id> --pick <n> --layout fill|blur|facecam --style <playbook style> --hook "TEXT"`
+`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/cut.py" jobs/<id> --pick <n> --layout fill|blur|facecam --hook "TEXT"`
 
 - `--start` / `--end` (seconds in the source) trim the candidate. With an unused `--pick` number they cut any range of the source, for example a moment from `questions-to-posts`. Most clips work at 7-30 seconds and within the campaign's length rules. End on the payoff.
-- `--style bold|clean|box`: use the caption style named in the page's `playbook.md` (default `bold`). Change it there, not clip by clip, unless the human is running a style test.
+- Caption style comes from the `Caption style:` line in the page's `playbook.md`, and the script prints which one it used. Leave `--style bold|clean|box` out unless the human asks for a different style for this clip (a style test). Don't copy it from an earlier clip's `.json`.
 - Captions mask swears and always mask slurs. `--allow-profanity` only if the campaign and platform allow it. `--captions none` if the source already has burned-in captions.
 - For a non-English source, the clip's range is transcribed again in the spoken language for the captions (Whisper `medium`, under a minute on a Mac GPU; the first time downloads about 1.5 GB).
 
