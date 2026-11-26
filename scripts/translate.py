@@ -74,7 +74,8 @@ def main():
             sys.exit(f"{tf}: {len(t.get('lines', []))} lines, the clip has {len(sents)}. Translate every line, keep the count.")
         hook = t.get("hook", "") if meta.get("hook") else ""
         ass = d / f"{clip.stem}_{lang}.ass"
-        ass.write_text(build_ass(spread(sents, t["lines"]), s0, e0, hook, CAP_Y[layout], meta.get("allow_profanity", False)),
+        ass.write_text(build_ass(spread(sents, t["lines"]), s0, e0, hook, CAP_Y[layout], meta.get("allow_profanity", False),
+                                  meta.get("style", "bold")),
                        encoding="utf-8")
         mp4 = clip.with_name(f"{clip.stem}_{lang}.mp4")
         encode(ffmpeg, src, s0 - off, e0 - off, video_filter(layout, ass, meta.get("focus", 0.5), meta.get("cam")), mp4)

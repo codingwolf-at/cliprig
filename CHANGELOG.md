@@ -8,6 +8,7 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 - `moment-finder --fast`: for multi-hour streams with chat replay or "most replayed" data. It ranks by those first and transcribes only the top 30%, about 3x faster. It stays opt-in because it misses moments that aren't loud: on an 86-minute podcast it kept 4 of the 8 picks a full run found. `clip-cutter` transcribes any skipped range a clip needs.
 - `clip-cutter`'s `fill` crop follows faces shot by shot (`--focus auto`, the new default): it finds the camera cuts, then centres each shot on the speaker, or between two people when both fit. It uses OpenCV's YuNet face model (230 KB, downloaded once). `--focus 0.5` still sets a fixed crop. Existing pages need `opencv-python-headless`: the `doctor` skill flags it.
+- Caption styles: `clip-cutter --style bold|clean|box`. `bold` is the old look and stays the default; `clean` is white sentence case with the spoken word brightest; `box` is black caps on a white box. New pages name their style in `playbook.md`, and `multilang` reuses the clip's style.
 - `rule-check` looks for footage the creator doesn't own. `check.py` saves one frame per shot as `<clip>_shots.png` and prints when each shot starts, and Claude checks it for film, TV, music video or other creators' footage before a clip is offered. In the first end-to-end run, a podcast's cut-in film scene had passed every other check.
 
 ### Fixed

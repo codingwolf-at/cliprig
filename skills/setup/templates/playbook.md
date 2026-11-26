@@ -30,7 +30,7 @@ Skip: [NICHE-SPECIFIC SKIPS], finance and trading advice, crypto, gambling, medi
 1. Find moments with `moment-finder`. Pick moments that work without context.
 2. Start on the moment itself, not the lead-in. The first 2 seconds decide the view.
 3. Hook text on screen, 3-9 words, sentence case. It must be true and delivered by the clip.
-4. Word-by-word captions, large, high contrast, in the safe area. Many people watch muted.
+4. Word-by-word captions, large, high contrast, in the safe area. Many people watch muted. Caption style: bold (`bold`: white caps with the spoken word in yellow; `clean`: white sentence case, the spoken word brightest; `box`: black caps on a white box). Keep one style so the page is recognisable.
 5. Frame the subject vertically (crop, blur fill or facecam). Keep the person delivering the moment in frame.
 6. End on the payoff.
 7. Material edits, not reposts: our own hook, captions, cut and framing on every clip. Platforms demote pages that mostly repost.

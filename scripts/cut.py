@@ -5,7 +5,7 @@ hook box in the first seconds, loudness normalised to -14 LUFS.
 Writes media/edits/<job>_clip<n>.mp4 + .json (metadata for rule checks).
 
 usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [--focus auto|0.5] [--cam x:y:w:h]
-                     [--hook "TEXT"] [--captions word|none] [--allow-profanity] [--start SEC --end SEC]
+                     [--hook "TEXT"] [--captions word|none] [--style bold|clean|box] [--allow-profanity] [--start SEC --end SEC]
        python cut.py --self-test
 """
 import argparse, hashlib, os, re, shutil, subprocess, sys, urllib.request
@@ -16,6 +16,22 @@ from common import ROOT, load_json, read_pcm, run, save_json, tool, video_source
 W, H = 1080, 1920
 CAP_Y = {"fill": 1380, "blur": 1460, "facecam": 1120}
 CAM_H = 730  # facecam layout: top panel height (~38%); must be even or yuv420p loses a row per panel
+# caption presets: ASS Cap and Hook styles (colours are &HAABBGGRR), all caps or not, tags around the spoken word,
+# and a small pop on each new group. Fonts missing on a system fall back to a similar one.
+STYLES = {
+    "bold": dict(  # big white caps, yellow spoken word, thick outline
+        cap="Arial Black,92,&H00FFFFFF,&H0000E5FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,7,3",
+        hook="Arial Black,68,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,18,0",
+        upper=True, on="{\\c&H0000E5FF&}", off="{\\c&H00FFFFFF&}", pop=True),
+    "clean": dict(  # sentence case, soft shadow, the spoken word bright and the rest dimmed
+        cap="Helvetica Neue,84,&H00FFFFFF,&H00FFFFFF,&H30000000,&H60000000,-1,0,0,0,100,100,0,0,1,4,3",
+        hook="Helvetica Neue,58,&H00FFFFFF,&H00FFFFFF,&H50000000,&H50000000,-1,0,0,0,100,100,0,0,3,16,0",
+        upper=False, on="{\\1a&H00&}", off="{\\1a&H50&}", pop=False),
+    "box": dict(  # black caps on a white box, red spoken word
+        cap="Arial Black,78,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,14,0",
+        hook="Arial Black,68,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,18,0",
+        upper=True, on="{\\c&H002A2AE0&}", off="{\\c&H00000000&}", pop=True),
+}
 YUNET = ("https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
          "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4")
 
@@ -67,7 +83,8 @@ def groups_of(words):
     return groups + ([cur] if cur else [])
 
 
-def build_ass(words, s0, e0, hook, cap_y, profanity=False):
+def build_ass(words, s0, e0, hook, cap_y, profanity=False, style="bold"):
+    st = STYLES[style]
     hdr = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}
@@ -76,8 +93,8 @@ WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,Arial Black,92,&H00FFFFFF,&H0000E5FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,7,3,5,60,60,0,1
-Style: Hook,Arial Black,68,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,18,0,8,70,70,170,1
+Style: Cap,{st["cap"]},5,60,60,0,1
+Style: Hook,{st["hook"]},8,70,70,170,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -91,10 +108,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             a = w["s"] - s0; b = (g[k + 1]["s"] - s0) if k + 1 < len(g) else g_end - s0
             if b <= a:
                 continue
-            parts = [("{\\c&H0000E5FF&}" + esc(x["w"].upper()) + "{\\c&H00FFFFFF&}") if j == k else esc(x["w"].upper())
-                     for j, x in enumerate(g)]
-            pop = "{\\fscx112\\fscy112\\t(0,90,\\fscx100\\fscy100)}" if k == 0 else ""
-            ev.append(f"Dialogue: 0,{ts(a)},{ts(b)},Cap,,0,0,0,,{{\\pos({W // 2},{cap_y})}}{pop}{' '.join(parts)}")
+            txt = [esc(x["w"].upper() if st["upper"] else x["w"]) for x in g]
+            parts = [st["on"] + t + st["off"] if j == k else t for j, t in enumerate(txt)]
+            pop = "{\\fscx112\\fscy112\\t(0,90,\\fscx100\\fscy100)}" if k == 0 and st["pop"] else ""
+            ev.append(f"Dialogue: 0,{ts(a)},{ts(b)},Cap,,0,0,0,,{{\\pos({W // 2},{cap_y})}}{pop}{st['off']}{' '.join(parts)}")
     if hook:
         ev.append(f"Dialogue: 1,{ts(0)},{ts(2.6)},Hook,,0,0,0,,{{\\fad(0,180)\\fscx92\\fscy92\\t(0,120,\\fscx100\\fscy100)}}{esc(hook)}")
     return hdr + "\n".join(ev) + "\n"
@@ -210,6 +227,7 @@ def main():
     ap.add_argument("--cam", help="facecam box as x:y:w:h fractions of the frame")
     ap.add_argument("--hook", default="")
     ap.add_argument("--captions", choices=["word", "none"], default="word")
+    ap.add_argument("--style", choices=list(STYLES), default="bold", help="caption look; the page's playbook.md names one")
     ap.add_argument("--allow-profanity", action="store_true", help="keep swear words in captions (slurs are always masked)")
     ap.add_argument("--start", type=float); ap.add_argument("--end", type=float)
     ap.add_argument("--frame", action="store_true", help="save one frame from the middle of the clip to choose a layout, then stop")
@@ -235,7 +253,7 @@ def main():
         return
     words = spoken_words(d, s0, e0) if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"
-    ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity), encoding="utf-8")
+    ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity, a.style), encoding="utf-8")
     if a.focus == "auto":
         a.focus = auto_focus(ffmpeg, src, s0 - off, e0 - off) if a.layout == "fill" else 0.5
         print(f"crop focus: {a.focus}")
@@ -244,7 +262,7 @@ def main():
     encode(ffmpeg, src, s0 - off, e0 - off, video_filter(a.layout, ass, a.focus, a.cam), mp4)
     info = c.get("info", {})
     save_json(mp4.with_suffix(".json"), {"file": str(mp4), "job": str(d), "pick": a.pick, "start": s0, "end": e0,
-                                         "layout": a.layout, "focus": a.focus, "cam": a.cam, "captions": a.captions,
+                                         "layout": a.layout, "focus": a.focus, "cam": a.cam, "captions": a.captions, "style": a.style,
                                          "allow_profanity": a.allow_profanity, "hook": a.hook, "source_url": info.get("webpage_url"),
                                          "source_title": info.get("title"), "source_channel": info.get("channel") or info.get("uploader")})
     print(mp4)
@@ -258,6 +276,10 @@ if __name__ == "__main__":
         assert [[x["w"] for x in g] for g in groups_of(ws)] == [["one", "two,"], ["three", "four"], ["five"]]
         ass = build_ass(ws, 0, 3, "HOOK", 1400)
         assert ass.count("Style: Cap") == 1 and ass.count(",Cap,") == 5 and ",Hook," in ass
+        assert "{\\c&H0000E5FF&}ONE{\\c&H00FFFFFF&} TWO," in ass, "bold: caps, the spoken word in yellow"
+        clean_ass = build_ass(ws, 0, 3, "", 1400, style="clean")
+        assert "{\\1a&H50&}{\\1a&H00&}one{\\1a&H50&} two," in clean_ass and "fscx112" not in clean_ass, "clean: case kept, no pop"
+        assert all(f"Style: Cap,{STYLES[k]['cap']}" in build_ass(ws, 0, 3, "", 1400, style=k) for k in STYLES)
         assert shots([0.4, 5.0, 5.6, 9.7], 10.0) == [(0.0, 5.0), (5.0, 10.0)], "short shots fold into the one before"
         assert focus_for([], 1920, 608, 0.3) == 0.3, "no face: keep the last focus"
         assert focus_for([(1700, 200)], 1920, 608) == 1.0 and focus_for([(860, 200)], 1920, 608) == 0.5
