@@ -1,0 +1,27 @@
+name: release
+
+# Pushing a tag like v0.3.0 publishes a GitHub release whose notes are that version's CHANGELOG.md section.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the version and take the notes from CHANGELOG.md
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          test "$(jq -r .version .claude-plugin/plugin.json)" = "$v" || { echo "plugin.json version is not $v"; exit 1; }
+          awk -v v="$v" 'index($0, "## [" v "]") == 1 {f=1; next} /^## \[/ || /^\[.*\]: http/ {f=0} f' CHANGELOG.md > notes.md
+          grep -q '[^[:space:]]' notes.md || { echo "CHANGELOG.md has no ## [$v] section"; exit 1; }
+      - name: Publish the release, unless it already exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && { echo "release exists"; exit 0; }
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Cliprig $GITHUB_REF_NAME" --notes-file notes.md

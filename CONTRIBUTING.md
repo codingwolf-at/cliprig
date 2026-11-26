@@ -44,3 +44,11 @@ You'll also need ffmpeg with libass for anything that burns captions (macOS: `br
 - **Real numbers only.** No invented views, rates or earnings, in code, docs or examples.
 - **Privacy.** A new network call must be added to the "What leaves your machine" table in the README.
 - **Small diffs.** One skill or one fix per pull request. Use what's already in `common.py` before adding a helper, and don't add a dependency for a few lines of code.
+
+## Releasing (maintainers)
+
+1. Set the new version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+2. In `CHANGELOG.md`, move the `Unreleased` entries under `## [x.y.z] - YYYY-MM-DD` and update the links at the bottom.
+3. Commit, then tag and push both: `git tag -a vx.y.z -m "Cliprig vx.y.z" && git push origin main vx.y.z`.
+
+The release workflow checks that the tag matches `plugin.json`, then publishes a GitHub release with that version's changelog section as its notes.
