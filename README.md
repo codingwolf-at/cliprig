@@ -31,16 +31,16 @@
 
 ## See it work
 
-<p align="center">
-  <img src="assets/demo.gif" alt="A 16:9 podcast segment on the left and the finished vertical clip Cliprig cut from it on the right, with a hook box and word-by-word captions" width="100%">
-</p>
+https://github.com/user-attachments/assets/fdca1e6d-4409-4d17-9c2c-c7a3b2ab0412
 
-A real run, not a mock-up:
+A real run, not a mock-up (the video has sound):
 
 1. `source-check` confirmed the video is licensed CC BY and saved the proof.
 2. `moment-finder` downloaded the first 10 minutes of the 86-minute episode, transcribed it on a MacBook, and ranked 6 moments using loudness, hook phrases and YouTube's "most replayed" graph.
 3. `source-check` ran its music check on moment #2 and flagged one 2-second gap for a person to listen to before posting.
 4. `clip-cutter` cut moment #2 into a 38-second 1080×1920 clip with the hook "He doesn't remember helping me", and `rule-check` passed it.
+
+The video shows the same moment cut again with the current version: 34 seconds, the crop following the face in each shot, and the hook "Neal Brennan forgot he dressed Josh Johnson".
 
 <details>
 <summary><b>See the whole session</b>: from a link to "ready for your yes"</summary>
@@ -99,7 +99,7 @@ Nothing is uploaded. You post it.
 
 </details>
 
-<sub>Demo source: <a href="https://www.youtube.com/watch?v=KfnFbvwm-KQ">Josh Johnson | Blocks Podcast w/ Neal Brennan</a> by Neal Brennan, licensed <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>. Changes: a 10-second excerpt, cropped to 9:16, with captions and a hook added, shown beside the original. No endorsement implied.</sub>
+<sub>Demo source: <a href="https://www.youtube.com/watch?v=KfnFbvwm-KQ">Josh Johnson | Blocks Podcast w/ Neal Brennan</a> by Neal Brennan, licensed <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>. Changes: a 34-second excerpt, cropped to 9:16, with captions and a hook added, shown beside the original. No endorsement implied.</sub>
 
 ## Why Cliprig
 
