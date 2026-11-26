@@ -34,6 +34,7 @@ You'll also need ffmpeg with libass for anything that burns captions (macOS: `br
    ```
 
    A new skill gets an `evals/trigger-<name>/` case.
+   To see Claude run the skills on Windows (setup, then find, cut and check a clip), start the manual "skills on windows" workflow in the Actions tab. It needs an `ANTHROPIC_API_KEY` repository secret and costs about $1-3 a run.
 5. **Add a line to `CHANGELOG.md`** under `Unreleased`.
 
 ## What we hold the line on
