@@ -4,6 +4,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-26
+
+Clips that look and check better: a crop that follows faces, three caption styles, a check for footage the creator doesn't own, faster non-English transcription, and `--fast` for long streams.
+
 ### Added
 
 - `moment-finder --fast`: for multi-hour streams with chat replay or "most replayed" data. It ranks by those first and transcribes only the top 30%, about 3x faster. It stays opt-in because it misses moments that aren't loud: on an 86-minute podcast it kept 4 of the 8 picks a full run found. `clip-cutter` transcribes any skipped range a clip needs.
@@ -11,14 +15,14 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 - Caption styles: `clip-cutter --style bold|clean|box`. `bold` is the old look and stays the default; `clean` is white sentence case with the spoken word brightest; `box` is black caps on a white box. New pages name their style in `playbook.md`, which `clip-cutter` uses unless `--style` is given, and `multilang` reuses the clip's style.
 - `rule-check` looks for footage the creator doesn't own. `check.py` saves one frame per shot as `<clip>_shots.png` and prints when each shot starts, and Claude checks it for film, TV, music video or other creators' footage before a clip is offered. In the first end-to-end run, a podcast's cut-in film scene had passed every other check.
 
-### Fixed
-
-- `moment-finder` transcription progress now shows the time taken and the time left, measured as it runs. The skill no longer promises a quarter of the audio's length, which was far off for some sources.
-
 ### Changed
 
 - `moment-finder` translates non-English audio to English while transcribing: about 30x faster for Hindi on an Apple GPU and 5x on the CPU, and the English hook and sponsor phrases now match. Transcription uses the Apple GPU on Macs, falling back to the CPU.
 - `clip-cutter` captions non-English clips in the spoken language, transcribing just the clip's range with Whisper `medium`.
+
+### Fixed
+
+- `moment-finder` transcription progress now shows the time taken and the time left, measured as it runs. The skill no longer promises a quarter of the audio's length, which was far off for some sources.
 
 ## [0.2.0] - 2026-11-26
 
@@ -70,6 +74,7 @@ First public release: 14 skills that run a short-form clip page in any niche, fr
 - Caption swear masking is English only. Translated captions are masked by hand.
 - Sentence edges treat abbreviations like "Mr." as the end of a sentence.
 
-[Unreleased]: https://github.com/codingwolf-at/cliprig/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/codingwolf-at/cliprig/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/codingwolf-at/cliprig/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/codingwolf-at/cliprig/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/codingwolf-at/cliprig/releases/tag/v0.1.0
