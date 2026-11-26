@@ -16,6 +16,7 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 ### Fixed
 
 - Sentence edges and caption groups no longer treat "Mr.", "Dr.", "e.g." or an initial like "R." as the end of a sentence, so clips don't start or stop mid-name. "No." and "I." still end sentences.
+- `setup` on Windows creates the venv with `py -3.12` when `uv` is missing (`python3` there often opens the Microsoft Store), and uses `.venv\Scripts\python.exe` for every step.
 
 ## [0.3.0] - 2026-11-26
 
