@@ -142,17 +142,37 @@ def shots(cuts, dur, min_len=1.0):
     return list(zip(keep, keep[1:] + [dur]))
 
 
-def focus_for(faces, fw, cw, last=0.5):
+def focus_for(faces, fw, cw, last=0.5, talk=None):
     """Crop focus that keeps the faces in frame. faces: [(x, w), ...] in a frame fw wide; cw: crop width.
-    Faces at least half the size of the largest count; if they all fit, centre on them, else on the largest."""
+    Faces at least half the size of the largest count; if they all fit, centre on them, else on the one
+    talking most (talk: a mouth-movement score per face), or the largest."""
     if not faces or fw <= cw:
         return last
     big = max(w for _, w in faces)
-    near = [(x, w) for x, w in faces if w >= big / 2]
-    a, b = min(x for x, _ in near), max(x + w for x, w in near)
+    near = [i for i, (_, w) in enumerate(faces) if w >= big / 2]
+    a, b = min(faces[i][0] for i in near), max(faces[i][0] + faces[i][1] for i in near)
     if b - a > 0.9 * cw:
-        x, w = max(near, key=lambda f: f[1]); a, b = x, x + w
+        i = max(near, key=lambda i: (talk[i], faces[i][1]) if talk else faces[i][1])
+        a, b = faces[i][0], faces[i][0] + faces[i][1]
     return round(float(min(1.0, max(0.0, ((a + b) / 2 - cw / 2) / (fw - cw)))), 3)
+
+
+def talk_scores(frames, faces, loud):
+    """Who is talking: per face, how well its mouth movement follows the audio's loudness (correlation).
+    frames: grey frames at a steady rate; loud: audio loudness at the same rate. Moving alone isn't enough:
+    listeners laugh and nod, but their mouths don't rise and fall with the talker's voice.
+    A mouth area runs from the nose to the chin, between the mouth corners (YuNet's landmarks)."""
+    import numpy as np
+    out = []
+    for f in faces:
+        x0, x1 = int(min(f[10], f[12]) - 0.15 * f[2]), int(max(f[10], f[12]) + 0.15 * f[2])
+        y0, y1 = int(f[9]), int(f[1] + f[3])
+        crops = [g[max(0, y0):max(0, y1), max(0, x0):max(0, x1)].astype(np.float32) for g in frames]
+        moves = np.array([np.abs(p - q).mean() for p, q in zip(crops, crops[1:])]) if crops and crops[0].size else np.array([])
+        n = min(len(moves), len(loud) - 1)
+        ok = n > 4 and moves[:n].std() > 0 and np.std(loud[1:n + 1]) > 0
+        out.append(float(np.corrcoef(moves[:n], loud[1:n + 1])[0, 1]) if ok else 0.0)
+    return out
 
 
 def yunet():
@@ -176,16 +196,30 @@ def auto_focus(ffmpeg, src, s0, e0):
     r = run([ffmpeg, "-hide_banner", "-ss", f"{s0:.2f}", "-to", f"{e0:.2f}", "-i", str(src), "-an",
              "-vf", "scale=320:-2,select='gt(scene,0.3)',showinfo", "-f", "null", "-"], capture=True)
     det, out, last = cv2.FaceDetectorYN.create(yunet(), "", (320, 320), 0.7), [], 0.5
-    for a, b in shots([float(t) for t in re.findall(r"pts_time:([\d.]+)", r.stderr)], e0 - s0):
-        png = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{s0 + (a + b) / 2:.2f}", "-i", str(src), "-frames:v", "1",
+
+    def frame(t):
+        png = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{t:.2f}", "-i", str(src), "-frames:v", "1",
                               "-vf", "scale=640:-2", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True).stdout
-        img = cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_COLOR) if png else None
+        return cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_COLOR) if png else None
+    for a, b in shots([float(t) for t in re.findall(r"pts_time:([\d.]+)", r.stderr)], e0 - s0):
+        img = frame(s0 + (a + b) / 2)
         if img is None:
             continue
         h, w = img.shape[:2]
         det.setInputSize((w, h))
         faces = det.detect(img)[1]
-        last = focus_for([(f[0], f[2]) for f in (faces if faces is not None else [])], w, h * W / H, last)
+        faces = [] if faces is None else list(faces)
+        talk = None
+        if len(faces) > 1:  # two or more people: who talks (used only if they don't all fit in the crop)
+            t0, dur = s0 + max(a, (a + b) / 2 - 8), min(b - a, 16)  # shortcut: one speaker per shot, from its middle 16 s
+            raw = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{t0:.2f}", "-t", f"{dur:.2f}", "-i", str(src), "-vf",
+                                  f"fps=10,scale={w}:{h}", "-f", "rawvideo", "-pix_fmt", "gray", "-"], capture_output=True).stdout
+            pcm = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{t0:.2f}", "-t", f"{dur:.2f}", "-i", str(src), "-ac", "1",
+                                  "-ar", "16000", "-f", "s16le", "-"], capture_output=True).stdout
+            x = np.frombuffer(pcm[: len(pcm) // 2 * 2], np.int16).astype(np.float32)
+            loud = np.sqrt((x[: len(x) // 1600 * 1600].reshape(-1, 1600) ** 2).mean(1)) if len(x) >= 1600 else np.zeros(0)
+            talk = talk_scores(np.frombuffer(raw[: len(raw) // (w * h) * w * h], np.uint8).reshape(-1, h, w), faces, loud)
+        last = focus_for([(f[0], f[2]) for f in faces], w, h * W / H, last, talk)
         if not out or abs(last - out[-1][1]) > 0.02:
             out.append([round(a, 2), last])
     return out if len(out) > 1 else (out[0][1] if out else 0.5)
@@ -296,6 +330,19 @@ if __name__ == "__main__":
         assert focus_for([(760, 180), (980, 180)], 1920, 608) == 0.5, "two faces that fit: centre between them"
         assert focus_for([(200, 200), (1700, 220)], 1920, 608) == 1.0, "too far apart: the larger face"
         assert focus_for([(200, 200), (1500, 40)], 1920, 608) == 0.0, "small background faces don't count"
+        assert focus_for([(200, 200), (1700, 220)], 1920, 608, talk=[5.0, 1.0]) == 0.0, "too far apart: the one talking"
+        assert focus_for([(760, 180), (980, 180)], 1920, 608, talk=[0.0, 9.0]) == 0.5, "both fit: talk doesn't matter"
+        import numpy as np
+        rng = np.random.default_rng(0)
+        loud = np.abs(np.sin(np.arange(40) / 2)) * 100  # speech rising and falling, 10 values a second
+        frames = [np.zeros((100, 200)) for _ in range(40)]
+        for k, g in enumerate(frames):
+            g[60:90, 20:60] += 40 * k  # left mouth area changes steadily: noise unrelated to the voice
+            g[60:90, 20:60] += rng.integers(0, 120, (30, 40))
+            g[60:90, 130:170] = 80 * (k % 2) if loud[k] > 50 else 0  # right mouth moves while the voice is loud
+        f = lambda x: [x, 20, 60, 75, 0, 0, 0, 0, x + 30, 55, x + 15, 70, x + 45, 70, 0.9]
+        t = talk_scores(frames, [f(10), f(120)], loud)
+        assert t[1] > 0.3 and t[1] > t[0], t
         assert page_style("4. Captions, large. Caption style: clean (`bold`: white caps; `box`: ...)") == "clean"
         assert page_style("Caption style: `box`") == "box" and page_style("Caption style: neon") == "bold" and page_style("") == "bold"
         assert crop_x(0.5) == "(iw-1080)*0.5"

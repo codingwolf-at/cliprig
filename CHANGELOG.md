@@ -4,6 +4,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Changed
+
+- `clip-cutter`'s `fill` crop follows whoever is talking in a wide shot where two people don't both fit, instead of the larger face. It scores how well each mouth's movement follows the audio's loudness, so a listener who laughs or nods isn't mistaken for the talker. It picks one person per shot.
+
 ## [0.3.0] - 2026-11-26
 
 Clips that look and check better: a crop that follows faces, three caption styles, a check for footage the creator doesn't own, faster non-English transcription, and `--fast` for long streams.
