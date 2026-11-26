@@ -7,13 +7,13 @@ Writes questions.md; clusters with no matching moment go to idea-bank.md as sour
 usage: python questions.py --subs podcasts,standupcomedy [--days 3] [--comments comments.txt] [--out questions.md]
        python questions.py --self-test
 """
-import argparse, difflib, json, re, sys, time, urllib.error, urllib.request
+import argparse, base64, difflib, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from common import ROOT, load_json
 
-UA = "cliprig/0.1 (questions; read-only public JSON)"
+UA = "script:cliprig:0.3 (read-only questions)"
 STARTERS = ("how", "where", "what", "can", "is", "does", "why", "when", "who")
 STOP = set("""a an the to of in on at for and or is are was were be been do does did can could would should will
 i you we they he she it my your our this that these those there here with about as by from if any what why how who when
@@ -21,6 +21,35 @@ where which me him her them his their its im ive dont not no yes so just really 
 one thing things people anyone someone something way much many more most very also still even ever""".split())
 WINDOW = 40  # max seconds of transcript per searchable moment
 _last = [0.0]
+_token = {}
+
+
+def reddit_keys():
+    """(client id, secret) of the user's own Reddit script app: REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET from the
+    environment or the page's reddit.env (KEY=value lines, git-ignored). None without them: public JSON is used."""
+    keys = dict(os.environ)
+    f = ROOT / "reddit.env"
+    if f.exists():
+        for line in f.read_text(encoding="utf-8").splitlines():
+            k, _, v = line.partition("=")
+            keys.setdefault(k.strip(), v.strip().strip('"'))
+    cid, secret = keys.get("REDDIT_CLIENT_ID"), keys.get("REDDIT_CLIENT_SECRET")
+    return (cid, secret) if cid and secret else None
+
+
+def token():
+    """App-only OAuth token (read-only, no Reddit login), fetched once and renewed when it expires."""
+    if _token.get("t") and time.time() < _token["until"]:
+        return _token["t"]
+    cid, secret = reddit_keys()
+    req = urllib.request.Request("https://www.reddit.com/api/v1/access_token", method="POST",
+                                 data=urllib.parse.urlencode({"grant_type": "client_credentials"}).encode(),
+                                 headers={"User-Agent": UA, "Authorization": "Basic " +
+                                          base64.b64encode(f"{cid}:{secret}".encode()).decode()})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    _token.update(t=d["access_token"], until=time.time() + int(d.get("expires_in", 3600)) - 60)
+    return _token["t"]
 
 
 def fetch(url):
@@ -30,7 +59,15 @@ def fetch(url):
         if wait > 0:
             time.sleep(wait)
         _last[0] = time.time()
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        headers = {"User-Agent": UA}
+        if reddit_keys():  # the official API with the user's own app; public JSON otherwise
+            url = url.replace("https://www.reddit.com/", "https://oauth.reddit.com/")
+            try:
+                headers["Authorization"] = "bearer " + token()
+            except Exception as e:  # never print the keys, only that the token request failed
+                print(f"Reddit OAuth token request failed ({type(e).__name__}): check reddit.env", file=sys.stderr)
+                return None
+        req = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 return json.loads(r.read().decode("utf-8"))
@@ -231,6 +268,28 @@ if __name__ == "__main__":
         assert best_moment(q("who was driving the car??"), ms2)["s"] == 0, "stems: driving ~ drives"
         assert best_moment(q("why does she have cataracts"), ms2)["s"] == 0, "one long specific word is enough"
         assert best_moment(q("is the show weird"), ms2) is not None and best_moment(q("best show"), ms2) is None
+        import tempfile
+        seen = []
+
+        class Resp:
+            def __init__(self, body): self.body = body
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def read(self): return json.dumps(self.body).encode()
+
+        def fake(req, timeout=30):
+            seen.append((req.full_url, req.get_header("Authorization")))
+            return Resp({"access_token": "tok", "expires_in": 3600} if "access_token" in req.full_url else {"ok": 1})
+        urllib.request.urlopen, ROOT = fake, Path(tempfile.mkdtemp())
+        for k in ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"):
+            os.environ.pop(k, None)
+        _last[0] = 0
+        assert fetch("https://www.reddit.com/r/x/new.json") == {"ok": 1} and seen[-1] == ("https://www.reddit.com/r/x/new.json", None)
+        (ROOT / "reddit.env").write_text('REDDIT_CLIENT_ID=abc\nREDDIT_CLIENT_SECRET="s3"\n')
+        _last[0] = 0
+        assert fetch("https://www.reddit.com/r/x/new.json") == {"ok": 1}
+        assert seen[-2] == ("https://www.reddit.com/api/v1/access_token", "Basic " + base64.b64encode(b"abc:s3").decode())
+        assert seen[-1] == ("https://oauth.reddit.com/r/x/new.json", "bearer tok"), seen
         print("self-test ok")
     else:
         main()

@@ -1,6 +1,8 @@
 # secrets: YouTube login cookies (works like a password)
 cookies.txt
 *cookies*.txt
+# Reddit app keys for questions-to-posts
+reddit.env
 
 # big or regenerated files
 .venv/

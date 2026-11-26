@@ -15,6 +15,15 @@ Ask the human to paste comments from the page's recent posts into `comments.txt`
 
 Either source alone works. Reddit's public JSON often refuses scripts (HTTP 403 or 429). If it does, run with `--comments` only. Don't try to get around the block.
 
+For reliable Reddit access, the human can create their own Reddit "script" app at https://www.reddit.com/prefs/apps (only they can: it's their account, and it means accepting Reddit's developer terms, which need Reddit's permission for commercial use). They put its keys in `reddit.env` in the page folder:
+
+```
+REDDIT_CLIENT_ID=...
+REDDIT_CLIENT_SECRET=...
+```
+
+The script then uses Reddit's official API, read-only, with no Reddit login. The keys work like a password: never print, paste or commit them (`reddit.env` is git-ignored).
+
 It clusters similar questions, ranks them by how often they're asked, then searches every transcript in `jobs/*/transcript.json` for the moment that answers each one. A source scanned with `moment-finder --fast` has only its top parts transcribed, so it can only answer from those. It writes `questions.md`, and adds questions with no matching moment to `idea-bank.md`.
 
 ## 2. Review

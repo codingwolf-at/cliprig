@@ -7,6 +7,7 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 ### Added
 
 - `clip-cutter --mask "word|word"`: masks more caption words in any language. For a non-English clip, it prints the captions so Claude can find swears and slurs the English lists miss and re-cut with `--mask`.
+- `questions-to-posts` can use Reddit's official API: with the keys of the user's own Reddit "script" app in the page's `reddit.env` (git-ignored), it reads through `oauth.reddit.com` instead of the public JSON that often refuses scripts.
 
 ### Changed
 

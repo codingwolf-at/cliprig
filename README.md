@@ -176,7 +176,7 @@ Each step is a skill Claude runs for you. `playbook` chains them into a daily ro
 | `campaign-finder` | Live clipping campaigns for your niche (Content Rewards and similar): pay per 1K views, budget left, views to first payout, rules. Ranked for a new or established page |
 | `trend-radar` | Recent long videos from creators you may clip, or the whole niche, ranked by views per hour, with a permission column |
 | `stream-finder` | Live streams on YouTube and Twitch ranked by viewers, and which of your creators are live right now |
-| `questions-to-posts` | Clusters the questions your audience keeps asking, then finds the moment in your sources that answers each one. Reddit often refuses scripts; comments you paste in always work |
+| `questions-to-posts` | Clusters the questions your audience keeps asking, then finds the moment in your sources that answers each one. Reddit often refuses scripts unless you add your own Reddit app's keys; comments you paste in always work |
 
 **Make**
 
@@ -226,7 +226,7 @@ Every network call Cliprig makes, and nothing else:
 |---|---|---|
 | Reading or downloading a video | YouTube, Twitch, or the site of a link you give (through yt-dlp) | Normal viewer requests for the page, video and chat. Your YouTube cookies only if you turn them on for a bot check |
 | Live streams and Twitch chat | `gql.twitch.tv`, `irc.chat.twitch.tv` | Anonymous, read-only requests. No account |
-| Audience questions | `reddit.com` | Public JSON requests, when Reddit allows them |
+| Audience questions | `reddit.com`, or `oauth.reddit.com` with your own Reddit app's keys | Read-only requests for a subreddit's new posts and their comments. Your app's keys only if you add them |
 | Finding campaigns | `contentrewards.com`, `whop.com`, `clip.tech` | Claude reads the pages like a visitor. It never signs in, joins or accepts terms for you |
 | First transcription | `huggingface.co` | One download of the speech model |
 | First `fill` clip | `github.com` (opencv_zoo) | One download of the face model (230 KB), checked against its hash |
