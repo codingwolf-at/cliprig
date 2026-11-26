@@ -58,6 +58,16 @@ def save_json(path, obj):
     Path(path).write_text(json.dumps(obj, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+# abbreviations that end in "." but rarely end a sentence; single capital initials ("J.") too, except "I.".
+# Left out on purpose: "No." (a common answer), and "etc.", "Jr.", "U.S.", "a.m." (they often do end one).
+ABBREV = re.compile(r"(mr|mrs|ms|dr|prof|st|vs|e\.g|i\.e|[A-HJ-Z])\.", re.I)
+
+
+def ends_sentence(word):
+    """True if a transcript word ends a sentence: . ? or !, but not "Mr." or an initial."""
+    return word[-1:] in "?!" or (word[-1:] == "." and not ABBREV.fullmatch(word.strip("\"'(")))
+
+
 def load_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 

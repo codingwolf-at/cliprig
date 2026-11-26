@@ -14,7 +14,7 @@ import argparse, bisect, json, math, re, sys, time, wave
 from pathlib import Path
 import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ffprobe, is_url, job_dir, load_json, read_pcm, run, save_json, tool, whisper_run, ytdlp_base, ytdlp_json
+from common import ends_sentence, ffprobe, is_url, job_dir, load_json, read_pcm, run, save_json, tool, whisper_run, ytdlp_base, ytdlp_json
 
 # reactions and hook phrases that work across niches; add niche words with --hype
 HYPE = (r"no way|oh my (god|gosh)|omg|let'?s go|holy|insane|crazy|wtf|are you serious|i can'?t believe|"
@@ -134,8 +134,8 @@ def mark_sentences(words):
     if not any(w["w"][-1:] in ".?!" for w in words):
         return words
     for i, w in enumerate(words):
-        w["b"] = i == 0 or words[i - 1]["w"][-1:] in ".?!"
-        w["eos"] = w["w"][-1:] in ".?!" or i == len(words) - 1
+        w["b"] = i == 0 or ends_sentence(words[i - 1]["w"])
+        w["eos"] = ends_sentence(w["w"]) or i == len(words) - 1
     return words
 
 
@@ -316,6 +316,10 @@ if __name__ == "__main__":
         ms = mark_sentences([{"w": "office", "s": 0, "e": 0.9, "b": True}, {"w": "mates", "s": 1, "e": 1.9, "eos": True},
                              {"w": "a", "s": 2, "e": 2.2, "b": True}, {"w": "bit.", "s": 2.3, "e": 2.6}, {"w": "So", "s": 3, "e": 3.4}])
         assert [(x["b"], x["eos"]) for x in ms] == [(True, False), (False, False), (False, False), (False, True), (True, True)], ms
+        assert [ends_sentence(w) for w in ["Mr.", "dr.", "J.", "e.g.", "No.", "well.", "really?", "wow!", '"Mr.', "so,", "I."]] == \
+            [False, False, False, False, True, True, True, True, False, False, True]
+        ms = mark_sentences([{"w": w, "s": i, "e": i + 0.5} for i, w in enumerate("I met Mr. Smith. He left.".split())])
+        assert [x["w"] for x in ms if x["b"]] == ["I", "He"] and [x["w"] for x in ms if x["eos"]] == ["Smith.", "left."], ms
         raw = [{"w": "no", "s": 0, "e": 1, "b": True}, {"w": "punctuation", "s": 1, "e": 2, "eos": True}]
         assert mark_sentences([dict(x) for x in raw]) == raw, "no punctuation: keep Whisper's marks"
         tight = [{"w": "mates", "s": 9.0, "e": 9.95}] + [{"w": "x", "s": t, "e": t + 0.5, "b": t == 10, "eos": t == 30} for t in range(10, 40)]

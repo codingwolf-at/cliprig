@@ -13,7 +13,7 @@ usage: python translate.py <clip.mp4> (--export | --lang LANG ...)
 import argparse, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import load_json, save_json, video_source
+from common import ends_sentence, load_json, save_json, video_source
 from cut import CAP_Y, build_ass, encode, ffmpeg_with_libass, video_filter
 
 
@@ -24,7 +24,7 @@ def sentences(words):
         if cur and w["s"] - cur[-1]["e"] > 0.8:
             out.append(cur); cur = []
         cur.append(w)
-        if w["w"][-1:] in ".?!":
+        if ends_sentence(w["w"]):
             out.append(cur); cur = []
     return out + ([cur] if cur else [])
 

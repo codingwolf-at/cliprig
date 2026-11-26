@@ -11,7 +11,7 @@ usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [
 import argparse, hashlib, os, re, shutil, subprocess, sys, urllib.request
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ROOT, load_json, read_pcm, run, save_json, tool, video_source, whisper_run
+from common import ROOT, ends_sentence, load_json, read_pcm, run, save_json, tool, video_source, whisper_run
 
 W, H = 1080, 1920
 CAP_Y = {"fill": 1380, "blur": 1460, "facecam": 1120}
@@ -77,7 +77,7 @@ def groups_of(words):
     """Caption groups of up to 3 words, broken on punctuation or a pause."""
     groups, cur = [], []
     for w in words:
-        if cur and (len(cur) == 3 or w["s"] - cur[-1]["e"] > 0.6 or cur[-1]["w"][-1:] in ".?!,"):
+        if cur and (len(cur) == 3 or w["s"] - cur[-1]["e"] > 0.6 or ends_sentence(cur[-1]["w"]) or cur[-1]["w"][-1:] == ","):
             groups.append(cur); cur = []
         cur.append(w)
     return groups + ([cur] if cur else [])
