@@ -19,7 +19,7 @@ You'll also need ffmpeg with libass for anything that burns captions (macOS: `br
 
 ## Before you open a pull request
 
-1. **Run the self-tests.** CI runs the same ones on macOS, Linux and Windows:
+1. **Run the self-tests.** CI runs the same ones on macOS, Linux and Windows, plus `.github/smoke_cut.py`, which cuts real clips with ffmpeg (run it too if you touch cutting or captions):
 
    ```bash
    for s in music_check moments cut check review trends translate questions doctor; do .venv/bin/python scripts/$s.py --self-test; done

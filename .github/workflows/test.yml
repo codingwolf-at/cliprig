@@ -31,6 +31,36 @@ jobs:
         working-directory: scripts
         run: python -c "import common, twitch, streams, live"
 
+  cut:
+    # a real cut with ffmpeg: captions, the per-shot crop, caption styles and the shot sheet
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install requirements
+        run: python -m pip install -r requirements.txt
+      - name: Install ffmpeg with libass (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: Install ffmpeg with libass (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg-full
+      - name: Install ffmpeg with libass (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg -y --no-progress
+      - name: Cut, caption and check real clips
+        run: python .github/smoke_cut.py
+
   plugin:
     runs-on: ubuntu-latest
     steps:
