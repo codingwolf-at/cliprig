@@ -259,7 +259,7 @@ my-page/
 - Python 3.10–3.12 (faster-whisper has no wheels for newer versions yet)
 - ffmpeg with libass for captions. On macOS: `brew install ffmpeg-full`. Setup installs it for you.
 
-Tested on macOS with Apple Silicon. Linux and Windows should work, and reports are welcome. Transcription runs on your machine: on an M3 it takes about a quarter of the video's length, and an NVIDIA GPU is used when there is one.
+Tested on macOS with Apple Silicon. CI also cuts real clips on Linux and Windows, but Claude has only run the skills on macOS, so reports are welcome. Transcription runs on your machine, on the Apple GPU on a Mac or an NVIDIA GPU when there is one, otherwise on the CPU. On an M3, 5 minutes of English took about 40 seconds, but speed varies a lot with the machine, the language, battery power and what else is running, so `moment-finder` prints the time left as it goes.
 
 ## FAQ
 
