@@ -4,11 +4,12 @@ Campaign rules are free text in campaigns.md, so the caller reads them and passe
 usage: python check.py <clip.mp4> [--min 7] [--max 60] [--caption "text"] [--require "#tag @handle"] [--ban "word|phrase"]
        python check.py --self-test
 Reads <clip>.json (written by cut.py) next to the clip if present. Exit code 1 on any FAIL.
+Also writes <clip>_shots.png, one frame per shot, to look at for footage the creator doesn't own.
 """
 import argparse, re, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from common import ffprobe, load_json
+from common import ffprobe, load_json, run, tool
 
 BANNED = ["leak", "leaked", "free download", "crack", "cracked", "piracy", "pirated", "full episode free"]
 
@@ -49,6 +50,15 @@ def checks(probe, meta, caption, mn, mx, require, ban):
     return res
 
 
+def shot_sheet(clip):
+    """One frame per shot, tiled 6x4, to spot inserted footage (film, TV, other creators): (png, shot start times)."""
+    png = clip.with_name(f"{clip.stem}_shots.png")
+    r = run([tool("ffmpeg"), "-hide_banner", "-y", "-i", str(clip), "-vf",
+             "select='eq(n,0)+gt(scene,0.3)',showinfo,scale=-2:360,tile=6x4:padding=4",
+             "-fps_mode", "vfr", "-frames:v", "1", str(png)], capture=True)
+    return png, [float(t) for t in re.findall(r"pts_time:([\d.]+)", r.stderr)]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("clip")
@@ -65,6 +75,10 @@ def main():
     res = checks(ffprobe(clip), meta, a.caption, a.min, a.max, a.require, a.ban)
     for n, ok, d in res:
         print(f"{'PASS' if ok else 'FAIL'}  {n}" + (f"  [{d}]" if d else ""))
+    png, starts = shot_sheet(clip)
+    more = f" (the sheet shows the first 24 of {len(starts)})" if len(starts) > 24 else ""
+    print(f"LOOK  {len(starts)} shots, starting at {', '.join(f'{t:.1f}s' for t in starts)}{more}: view {png} "
+          "for film, TV, music video or another creator's footage cut into the source")
     bad = [r for r in res if not r[1]]
     print("RESULT: " + ("FAIL" if bad else "PASS"))
     sys.exit(1 if bad else 0)

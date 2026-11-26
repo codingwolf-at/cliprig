@@ -211,6 +211,7 @@ These are built into the skills, not left to good intentions:
 - **You post, it never does.** Every clip waits for your "yes". Nothing is uploaded automatically.
 - **Permission first.** Only joined campaigns, campaign-supplied footage, creators who allow clipping in writing, or plain CC BY. The proof is saved with the source. "Fair use" doesn't count.
 - **No audible music.** Every segment gets a music check: sound in the gaps between speech, and words only an unfiltered transcription hears (often lyrics).
+- **No borrowed footage.** Before posting, Claude looks at one frame per shot for film, TV or other creators' footage cut into the source, and leaves it out.
 - **Real numbers only.** No invented rates, budgets, views or earnings, and no earnings promises.
 - **Credit every creator,** and never put words in their mouth.
 - **Paid clips are labelled as ads.** Campaign clips earn money, so each one carries `#ad` in the caption or the platform's paid-promotion label.
