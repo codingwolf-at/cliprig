@@ -4,6 +4,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Added
+
+- `clip-cutter --mask "word|word"`: masks more caption words in any language. For a non-English clip, it prints the captions so Claude can find swears and slurs the English lists miss and re-cut with `--mask`.
+
 ### Changed
 
 - `clip-cutter`'s `fill` crop follows whoever is talking in a wide shot where two people don't both fit, instead of the larger face. It scores how well each mouth's movement follows the audio's loudness, so a listener who laughs or nods isn't mistaken for the talker. It picks one person per shot.

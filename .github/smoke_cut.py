@@ -51,4 +51,11 @@ for n in (1, 2):
     out = py("check.py", str(page / "media" / "edits" / f"smoke_clip{n}.mp4"), "--caption", "Smoke test. Clip from Smoke Pod.")
     assert "RESULT: PASS" in out and "LOOK  2 shots" in out, out
     assert (page / "media" / "edits" / f"smoke_clip{n}_shots.png").stat().st_size > 1000
+# a Spanish source: English lists don't apply, so the captions are printed for Claude and --mask covers the rest
+es = [{"w": w, "s": 1.0 + i * 0.6, "e": 1.5 + i * 0.6} for i, w in enumerate("¡Qué día! Joder, no me lo creo.".split())]
+(job / "transcript.json").write_text(json.dumps(es))
+(job / "lang.txt").write_text("es")
+out = py("cut.py", str(job), "--pick", "3", "--start", "1", "--end", "8", "--layout", "fill", "--focus", "0.5",
+         "--mask", "joder")
+assert "captions (es): ¡Qué día! J****, no me lo creo." in out and meta(3)["mask"] == ["joder"], out
 print("smoke ok")

@@ -5,7 +5,7 @@ hook box in the first seconds, loudness normalised to -14 LUFS.
 Writes media/edits/<job>_clip<n>.mp4 + .json (metadata for rule checks).
 
 usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [--focus auto|0.5] [--cam x:y:w:h]
-                     [--hook "TEXT"] [--captions word|none] [--style bold|clean|box] [--allow-profanity] [--start SEC --end SEC]
+                     [--hook "TEXT"] [--captions word|none] [--style bold|clean|box] [--allow-profanity] [--mask "w|w"] [--start SEC --end SEC]
        python cut.py --self-test
 """
 import argparse, hashlib, os, re, shutil, subprocess, sys, urllib.request
@@ -62,9 +62,13 @@ def ts(t):
     return f"{h}:{m:02d}:{s:05.2f}"
 
 
-def clean(s, profanity=False):
-    """Slurs are always masked (first letter kept); hard swears too unless profanity=True."""
+def clean(s, profanity=False, extra=()):
+    """Slurs are always masked (first letter kept); hard swears too unless profanity=True.
+    extra: more words to mask in any language (--mask), compared whole, ignoring case and punctuation."""
     mask = lambda m: m.group(0)[0] + "*" * (len(m.group(0)) - 1)
+    core = s.strip(".,!?;:\"'()¿¡…-")
+    if core and core.casefold() in extra:
+        s = s.replace(core, core[0] + "*" * (len(core) - 1), 1)
     s = SLURS.sub(mask, s)
     return s if profanity else SWEARS.sub(mask, s)
 
@@ -83,7 +87,7 @@ def groups_of(words):
     return groups + ([cur] if cur else [])
 
 
-def build_ass(words, s0, e0, hook, cap_y, profanity=False, style="bold"):
+def build_ass(words, s0, e0, hook, cap_y, profanity=False, style="bold", extra=()):
     st = STYLES[style]
     hdr = f"""[Script Info]
 ScriptType: v4.00+
@@ -100,7 +104,7 @@ Style: Hook,{st["hook"]},8,70,70,170,1
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ev = []
-    groups = groups_of([dict(w, w=clean(w["w"], profanity)) for w in words if s0 <= w["s"] < e0 and w["w"]])
+    groups = groups_of([dict(w, w=clean(w["w"], profanity, extra)) for w in words if s0 <= w["s"] < e0 and w["w"]])
     for gi, g in enumerate(groups):
         g_end = groups[gi + 1][0]["s"] if gi + 1 < len(groups) else g[-1]["e"] + 0.4
         g_end = min(g_end, g[-1]["e"] + 0.8)
@@ -269,6 +273,7 @@ def main():
     ap.add_argument("--captions", choices=["word", "none"], default="word")
     ap.add_argument("--style", choices=list(STYLES), help="caption look for this clip only; default: the style playbook.md names")
     ap.add_argument("--allow-profanity", action="store_true", help="keep swear words in captions (slurs are always masked)")
+    ap.add_argument("--mask", default="", help="more words to mask in the captions, any language, separated by |")
     ap.add_argument("--start", type=float); ap.add_argument("--end", type=float)
     ap.add_argument("--frame", action="store_true", help="save one frame from the middle of the clip to choose a layout, then stop")
     a = ap.parse_args()
@@ -297,7 +302,13 @@ def main():
         print(f"caption style: {a.style} (from playbook.md)")
     words = spoken_words(d, s0, e0) if a.captions == "word" else []
     ass = d / f"clip_{a.pick}.ass"
-    ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity, a.style), encoding="utf-8")
+    extra = {m.strip().casefold() for m in a.mask.split("|") if m.strip()}
+    ass.write_text(build_ass(words, s0, e0, a.hook, CAP_Y[a.layout], a.allow_profanity, a.style, extra), encoding="utf-8")
+    lang = (d / "lang.txt").read_text().strip() if (d / "lang.txt").exists() else "en"
+    if lang != "en" and words:  # the built-in swear and slur lists are English: Claude checks the rest
+        said = " ".join(clean(w["w"], a.allow_profanity, extra) for w in words if s0 <= w["s"] < e0)
+        print(f"captions ({lang}): {said}\nThe built-in masking is English only. Check these for swears and slurs "
+              f"in {lang}, and re-cut with --mask \"word|word\" if any are left.")
     if a.focus == "auto":
         a.focus = auto_focus(ffmpeg, src, s0 - off, e0 - off) if a.layout == "fill" else 0.5
         print(f"crop focus: {a.focus}")
@@ -307,7 +318,7 @@ def main():
     info = c.get("info", {})
     save_json(mp4.with_suffix(".json"), {"file": str(mp4), "job": str(d), "pick": a.pick, "start": s0, "end": e0,
                                          "layout": a.layout, "focus": a.focus, "cam": a.cam, "captions": a.captions, "style": a.style,
-                                         "allow_profanity": a.allow_profanity, "hook": a.hook, "source_url": info.get("webpage_url"),
+                                         "allow_profanity": a.allow_profanity, "mask": sorted(extra), "hook": a.hook, "source_url": info.get("webpage_url"),
                                          "source_title": info.get("title"), "source_channel": info.get("channel") or info.get("uploader")})
     print(mp4)
 
@@ -316,6 +327,8 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["--self-test"]:
         assert clean("what the fuck, retard") == "what the f***, r*****"
         assert clean("holy shit", profanity=True) == "holy shit"
+        assert clean("¡Joder!", extra={"joder"}) == "¡J****!" and clean("JODER,", extra={"joder"}) == "J****,"
+        assert clean("चूतिया", extra={"चूतिया"}) == "च" + "*" * 5 and clean("hola", extra={"joder"}) == "hola"
         ws = [{"w": w, "s": s, "e": s + 0.2} for w, s in [("one", 0), ("two,", 0.3), ("three", 0.6), ("four", 0.9), ("five", 2.0)]]
         assert [[x["w"] for x in g] for g in groups_of(ws)] == [["one", "two,"], ["three", "four"], ["five"]]
         ass = build_ass(ws, 0, 3, "HOOK", 1400)

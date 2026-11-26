@@ -23,7 +23,7 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 
 - `--start` / `--end` (seconds in the source) trim the candidate. With an unused `--pick` number they cut any range of the source, for example a moment from `questions-to-posts`. Most clips work at 7-30 seconds and within the campaign's length rules. End on the payoff.
 - Caption style comes from the `Caption style:` line in the page's `playbook.md`, and the script prints which one it used. Leave `--style bold|clean|box` out unless the human asks for a different style for this clip (a style test). Don't copy it from an earlier clip's `.json`.
-- Captions mask swears and always mask slurs. `--allow-profanity` only if the campaign and platform allow it. `--captions none` if the source already has burned-in captions.
+- Captions mask swears and always mask slurs. `--allow-profanity` only if the campaign and platform allow it. The built-in lists are English: for a non-English clip the script prints the captions, so read them, and if a swear or slur in that language is left, re-cut with `--mask "word|word"` (any language, whole words). Slurs are masked even with `--allow-profanity`. `--captions none` if the source already has burned-in captions.
 - For a non-English source, the clip's range is transcribed again in the spoken language for the captions (Whisper `medium`, under a minute on a Mac GPU; the first time downloads about 1.5 GB).
 
 It writes `media/edits/<job>_clip<n>.mp4` and a `.json` with times, layout, hook and source. Re-running with the same pick overwrites it.
