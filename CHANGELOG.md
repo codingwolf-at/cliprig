@@ -4,6 +4,10 @@ All notable changes to Cliprig are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Added
+
+- `moment-finder --fast`: for multi-hour streams with chat replay or "most replayed" data. It ranks by those first and transcribes only the top 30%, about 3x faster. It stays opt-in because it misses moments that aren't loud: on an 86-minute podcast it kept 4 of the 8 picks a full run found. `clip-cutter` transcribes any skipped range a clip needs.
+
 ### Fixed
 
 - `moment-finder` transcription progress now shows the time taken and the time left, measured as it runs. The skill no longer promises a quarter of the audio's length, which was far off for some sources.

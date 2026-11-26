@@ -15,7 +15,7 @@ Ask the human to paste comments from the page's recent posts into `comments.txt`
 
 Either source alone works. Reddit's public JSON often refuses scripts (HTTP 403 or 429). If it does, run with `--comments` only. Don't try to get around the block.
 
-It clusters similar questions, ranks them by how often they're asked, then searches every transcript in `jobs/*/transcript.json` for the moment that answers each one. It writes `questions.md`, and adds questions with no matching moment to `idea-bank.md`.
+It clusters similar questions, ranks them by how often they're asked, then searches every transcript in `jobs/*/transcript.json` for the moment that answers each one. A source scanned with `moment-finder --fast` has only its top parts transcribed, so it can only answer from those. It writes `questions.md`, and adds questions with no matching moment to `idea-bank.md`.
 
 ## 2. Review
 

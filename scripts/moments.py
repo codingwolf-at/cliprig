@@ -5,7 +5,9 @@ live-chat spikes (YouTube VOD chat replay or a TwitchDownloader chat.json) and h
 Windows start on a sentence start and end on a sentence end where the transcript allows.
 Writes jobs/<id>/candidates.md + candidates.json.
 
-usage: python moments.py <url-or-file> [--top 8] [--min 15] [--max 40] [--hype "phrase|phrase"] [--chat chat.json] [--max-minutes 90]
+--fast: rank a long source by replay and chat data first, and transcribe only its top regions.
+
+usage: python moments.py <url-or-file> [--top 8] [--min 15] [--max 40] [--hype "phrase|phrase"] [--chat chat.json] [--max-minutes 90] [--fast]
        python moments.py --self-test
 """
 import argparse, bisect, json, math, re, sys, time, wave
@@ -56,37 +58,74 @@ def audio_rms(vid, d, max_min):
     return wav, 20 * np.log10(rms)
 
 
-def transcribe(wav, d):
-    """Words with timestamps, in English: other languages are translated, so the English hook and sponsor phrases match,
-    and it runs ~5x faster on CPU than transcribing Hindi. lang.txt keeps the spoken language for clip-cutter's captions.
-    b/eos mark the first/last word of each transcript segment (roughly a sentence)."""
-    out = d / "transcript.json"
-    if out.exists():
-        return load_json(out)
-    pcm = read_pcm(wav)  # pass samples directly (16 kHz mono), no extra decoder needed
+def spans_of(mask):
+    """[[a, b], ...] runs of True seconds in a boolean mask."""
+    edges = np.flatnonzero(np.diff(np.concatenate([[0], mask.astype(np.int8), [0]])))
+    return [[int(a), int(b)] for a, b in zip(edges[::2], edges[1::2])]
+
+
+def regions(pre, budget, pad):
+    """Seconds worth transcribing: +-pad around the highest pre-rank peaks until `budget` seconds are covered."""
+    cov, got = np.zeros(len(pre), bool), 0
+    for p in np.argsort(-pre, kind="stable"):
+        if got >= budget:
+            break
+        if not cov[p]:
+            a, b = max(0, p - pad), min(len(pre), p + pad + 1)
+            got += int((~cov[a:b]).sum()); cov[a:b] = True
+    return cov
+
+
+def transcribe(wav, d, want=None):
+    """Words with timestamps for the [a, b] second ranges in `want` (default: all), in English: other languages are
+    translated, so the English hook and sponsor phrases match, and it runs ~5x faster on CPU than transcribing Hindi.
+    lang.txt keeps the spoken language for clip-cutter's captions. Already transcribed seconds are listed in
+    transcript_spans.json, so only missing ones are done. b/eos mark the first/last word of each segment."""
+    out, spans_f = d / "transcript.json", d / "transcript_spans.json"
+    with wave.open(str(wav)) as w:
+        n = int(math.ceil(w.getnframes() / 16000))
+    words = load_json(out) if out.exists() else []
+    have = np.zeros(n, bool)
+    for a, b in (load_json(spans_f) if spans_f.exists() else [[0, n]] if out.exists() else []):  # old jobs: full
+        have[a:b] = True
+    need = np.ones(n, bool) if want is None else np.zeros(n, bool)
+    for a, b in want or []:
+        need[max(0, int(a)):int(math.ceil(b))] = True
+    todo = spans_of(need & ~have)
+    if not todo:
+        return words
+    total = sum(b - a for a, b in todo)
 
     def run_on(model):
-        lang = model.detect_language(pcm, vad_filter=True, language_detection_segments=3)[0]
-        (d / "lang.txt").write_text(lang)
+        if (d / "lang.txt").exists():
+            lang = (d / "lang.txt").read_text().strip()
+        else:
+            lang = model.detect_language(read_pcm(wav, *todo[0]), vad_filter=True, language_detection_segments=3)[0]
+            (d / "lang.txt").write_text(lang)
         kw = {}
         if lang != "en":  # greedy: beam search made Hindi slower and looped into junk
             print(f"spoken language: {lang}; ranking on an English translation", flush=True)
             kw = dict(task="translate", language=lang, beam_size=1, condition_on_previous_text=False)
-        segs, _ = model.transcribe(pcm, word_timestamps=True, vad_filter=True, **kw)
-        words, total, mark, t0 = [], len(pcm) / 16000, 300, time.time()
-        for s in segs:
-            if s.end >= mark:  # a sign of life on long sources, with a measured ETA: speed varies a lot by language
-                took = time.time() - t0
-                print(f"transcribed {int(s.end // 60)} of {int(total // 60)} min in {took / 60:.0f} min, "
-                      f"about {took / s.end * (total - s.end) / 60:.0f} min left", flush=True)
-                mark = s.end + 300
-            ws = [{"w": w.word.strip(), "s": round(w.start, 2), "e": round(w.end, 2)} for w in (s.words or []) if w.word.strip()]
-            if ws:
-                ws[0]["b"] = ws[-1]["eos"] = True
-                words += ws
-        return words
-    words = whisper_run(run_on)
+        new, done, mark, t0 = [], 0, 300, time.time()
+        for a, b in todo:
+            segs, _ = model.transcribe(read_pcm(wav, a, b), word_timestamps=True, vad_filter=True, **kw)
+            for s in segs:
+                if done + s.end >= mark:  # a sign of life on long sources, with a measured ETA: speed varies a lot
+                    took, at = time.time() - t0, done + s.end
+                    print(f"transcribed {int(at // 60)} of {int(total // 60)} min in {took / 60:.0f} min, "
+                          f"about {took / at * (total - at) / 60:.0f} min left", flush=True)
+                    mark = at + 300
+                ws = [{"w": w.word.strip(), "s": round(a + w.start, 2), "e": round(a + w.end, 2)} for w in (s.words or []) if w.word.strip()]
+                if ws:
+                    ws[0]["b"] = ws[-1]["eos"] = True
+                    new += ws
+            done += b - a
+        return new
+    words = sorted(words + whisper_run(run_on), key=lambda x: x["s"])
+    for a, b in todo:
+        have[a:b] = True
     save_json(out, words)
+    save_json(spans_f, spans_of(have))
     return words
 
 
@@ -151,14 +190,16 @@ def smooth(a, k):
     return np.convolve(a, np.ones(k) / k, mode="same")
 
 
-def ad_mask(hits, gap=180, pre=45, post=5):
-    """Seconds inside sponsor reads: ad-phrase hits less than `gap` apart form one read, padded for its intro."""
+def ad_mask(hits, gap=180, pre=45, post=5, covered=None):
+    """Seconds inside sponsor reads: ad-phrase hits less than `gap` apart form one read, padded for its intro.
+    Gaps count only `covered` (transcribed) seconds: an untranscribed stretch says nothing about the ad ending."""
     # shortcut: a lone "use code" in normal talk also blocks ~50 s; add a flag if a niche needs those moments
     mask, ts = np.zeros(len(hits), bool), np.flatnonzero(hits)
+    heard = np.cumsum(np.ones(len(hits)) if covered is None else covered[:len(hits)])
     i = 0
     while i < len(ts):
         j = i
-        while j + 1 < len(ts) and ts[j + 1] - ts[j] < gap:
+        while j + 1 < len(ts) and heard[ts[j + 1]] - heard[ts[j]] < gap:
             j += 1
         mask[max(0, ts[i] - pre):ts[j] + post + 1] = True
         i = j + 1
@@ -200,16 +241,16 @@ def main():
     ap.add_argument("--min", type=float, default=15); ap.add_argument("--max", type=float, default=40)
     ap.add_argument("--hype", help="extra niche phrases, regex alternatives: \"buzzer beater|walk-off\"")
     ap.add_argument("--chat"); ap.add_argument("--max-minutes", type=int, default=90)
+    ap.add_argument("--fast", action="store_true",
+                    help="long source with replay or chat data: transcribe only its top 30%%. ~3x faster, may miss quiet hook moments")
     a = ap.parse_args()
     d = job_dir(a.src)
     vid, info = fetch(a.src, d, a.max_minutes)
     dur = min(float(ffprobe(vid)["format"]["duration"]), a.max_minutes * 60)
     wav, db = audio_rms(vid, d, a.max_minutes)
     n = len(db)
-    words = mark_sentences(transcribe(wav, d))
-    # signals
+    # signals that need no transcript
     loud = smooth(np.clip(z(db - smooth(db, 30)), 0, None), 3)          # jumps above the local level
-    hype = smooth(hype_series(words, n, HYPE + (f"|{a.hype}" if a.hype else "")), 5)
     heat = np.zeros(n)
     for h in (info.get("heatmap") or []):
         heat[int(h["start_time"]):int(math.ceil(h["end_time"]))] = h["value"]
@@ -217,12 +258,28 @@ def main():
     chatz = smooth(np.clip(z(smooth(chat, 10)), 0, None), 3)
     w_heat = 2.0 if heat.any() else 0
     w_chat = 1.5 if chat.any() else 0
+    pre = 1.0 * loud + w_heat * z(heat).clip(0) + w_chat * chatz
+    # --fast: transcribe only around the top peaks of the signals above. On an 86-min podcast this kept 4 of 8
+    # full-run picks (hook phrases said at normal volume are missed), so it is opt-in, for multi-hour streams.
+    budget = max(20 * 60, 0.3 * n)
+    want = None
+    if a.fast and not (w_heat or w_chat):
+        print("--fast needs replay or chat data to rank by, and this source has neither: transcribing all of it", flush=True)
+    elif a.fast and budget < n:
+        top = regions(pre, budget, int(a.max * 1.5))
+        want = spans_of(top)
+        print(f"--fast: transcribing the {top.sum() / 60:.0f} most promising of {n / 60:.0f} min", flush=True)
+    words = mark_sentences(transcribe(wav, d, want))
+    covered = np.zeros(n, bool)
+    for s0, e0 in load_json(d / "transcript_spans.json") if (d / "transcript_spans.json").exists() else [[0, n]]:
+        covered[s0:e0] = True
+    hype = smooth(hype_series(words, n, HYPE + (f"|{a.hype}" if a.hype else "")), 5)
     score = 1.0 * loud + 0.8 * z(hype).clip(0) + w_heat * z(heat).clip(0) + w_chat * chatz
     picks = []
-    ads = ad_mask(hype_series(words, n, AD))
+    ads = ad_mask(hype_series(words, n, AD), covered=covered)
     if ads.any():
         print(f"skipping {ads.sum() / 60:.0f} min of sponsor reads")
-    for s0, e0, p in pick(score, words, dur, a.top, a.min, a.max, ads):
+    for s0, e0, p in pick(score, words, dur, a.top, a.min, a.max, ads | ~covered):
         text = " ".join(x["w"] for x in words if s0 <= x["s"] < e0)
         why = []
         if loud[p] > 1: why.append("loudness spike")
@@ -239,7 +296,7 @@ def main():
                                       "signals": {"heatmap": bool(w_heat), "chat": bool(w_chat), "words": len(words)}})
     fmt = lambda t: f"{int(t // 60)}:{int(t % 60):02d}"
     md = [f"# Candidates: {meta.get('title', '')}", f"source: {meta.get('webpage_url', '')}",
-          f"signals: loudness, transcript ({len(words)} words)" + (", most replayed" if w_heat else "") + (", chat" if w_chat else ""), ""]
+          f"signals: loudness, transcript ({len(words)} words, {covered.sum() / 60:.0f} of {n / 60:.0f} min)" + (", most replayed" if w_heat else "") + (", chat" if w_chat else ""), ""]
     for x in picks:
         md += [f"## {x['n']}. {fmt(x['start'])}-{fmt(x['end'])} ({x['end'] - x['start']:.0f}s) score {x['score']}",
                f"why: {', '.join(x['why'])}", f"> {x['text']}", ""]
@@ -280,6 +337,22 @@ if __name__ == "__main__":
         sc = np.zeros(100); sc[30] = 2; sc[80] = 1
         blk = np.zeros(100, bool); blk[40:45] = True
         assert [p for _, _, p in pick(sc, words, 100.0, 2, 15, 40, blk)] == [80], "a window touching an ad is skipped"
+        assert spans_of(np.array([0, 1, 1, 0, 1], bool)) == [[1, 3], [4, 5]]
+        pre = np.zeros(1000); pre[100] = 3; pre[500] = 2; pre[510] = 1.5; pre[900] = 1
+        cov = regions(pre, 120, 30)
+        assert spans_of(cov) == [[70, 131], [470, 531]], spans_of(cov)  # 510 sits inside 500's region; 900 is over budget
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:  # covered seconds are never transcribed again (no model needed)
+            t = Path(t)
+            with wave.open(str(t / "audio.wav"), "wb") as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(b"\0\0" * 16000 * 10)
+            save_json(t / "transcript.json", [{"w": "hi", "s": 3.0, "e": 3.4}])
+            assert transcribe(t / "audio.wav", t) == [{"w": "hi", "s": 3.0, "e": 3.4}], "old job: whole transcript counts"
+            save_json(t / "transcript_spans.json", [[2, 6]])
+            assert len(transcribe(t / "audio.wav", t, [[2.5, 5.5]])) == 1, "range already covered"
+        far = np.zeros(1000); far[100] = far[700] = 1  # 600 s apart, but only 100 s of it transcribed
+        cov = np.zeros(1000, bool); cov[:150] = cov[650:] = True
+        assert not ad_mask(far)[400] and ad_mask(far, covered=cov)[400], "ad spans join across untranscribed time"
         print("self-test ok")
     else:
         main()

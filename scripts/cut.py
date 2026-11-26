@@ -24,10 +24,12 @@ SWEARS = re.compile(r"\b(fuck\w*|motherfuck\w*|shit\w*|bitch\w*|cunt\w*|dick\w*|
 def spoken_words(d, s0, e0):
     """Caption words in the language spoken. moment-finder ranks non-English audio on an English translation,
     whose word times are rough, so the clip's range is transcribed again in its own language (a few seconds)."""
-    words = load_json(d / "transcript.json")
     lang = (d / "lang.txt").read_text().strip() if (d / "lang.txt").exists() else "en"
-    if lang == "en" or not (d / "audio.wav").exists():
-        return words
+    if not (d / "audio.wav").exists():
+        return load_json(d / "transcript.json")
+    if lang == "en":  # moment-finder may have transcribed only the top regions of a long source: fill the clip's range
+        from moments import transcribe
+        return transcribe(d / "audio.wav", d, [[s0, e0]])
 
     def go(model):
         segs, _ = model.transcribe(read_pcm(d / "audio.wav", s0, e0), language=lang, word_timestamps=True, vad_filter=True)
