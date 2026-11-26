@@ -1,0 +1,20 @@
+# Monthly, grouped into one pull request per ecosystem.
+# requirements.txt uses >= ranges, so pip only gets a pull request when a range has to move.
+# Security fixes come from Dependabot security updates (a repository setting), not from this file.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    versioning-strategy: increase-if-necessary
+    groups:
+      pip:
+        patterns: ["*"]
