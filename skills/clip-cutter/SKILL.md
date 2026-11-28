@@ -26,7 +26,25 @@ description: Cut a picked moment into a finished 1080x1920 vertical clip with wo
 - Captions mask swears and always mask slurs. `--allow-profanity` only if the campaign and platform allow it. The built-in lists are English: for a non-English clip the script prints the captions, so read them, and if a swear or slur in that language is left, re-cut with `--mask "word|word"` (any language, whole words). Slurs are masked even with `--allow-profanity`. `--captions none` if the source already has burned-in captions.
 - For a non-English source, the clip's range is transcribed again in the spoken language for the captions (Whisper `medium`, under a minute on a Mac GPU; the first time downloads about 1.5 GB).
 
-It writes `media/edits/<job>_clip<n>.mp4` and a `.json` with times, layout, hook and source. Re-running with the same pick overwrites it.
+It writes the clip into its own folder (see Output layout below). Re-running with the same pick overwrites it.
+
+## Output layout
+
+Every clip gets one folder, so the upload is never a hunt through a flat directory:
+
+```
+media/edits/<clip-id>/
+  <clip-id>.mp4       final vertical clip
+  <clip-id>.json      sidecar: times, layout, hook, source, creator, permission proof
+  captions.md         one section per platform: Instagram, YouTube, X, TikTok, Reels, Shorts
+  status.md           posted? where? when? (one line per platform, blank until posted)
+```
+
+- `<clip-id>` = `<job>_clip<n>`, for example `carry-0320-1ecb9d9a_clip8`. The job id starts with the source and the VOD time, and the job's source is recorded in `media/raw/<source-slug>/SOURCE.md`.
+- Never delete or rename the `.json`. `rule-check` (`check.py`) and `translate.py` read it for the source and permission. A `.json` looks like junk but it is the clip's record.
+- Never rename the `.mp4` without renaming the folder and `.json` to match.
+- `captions.md` is written before posting, one section per platform, with the credit line. Copy from it at upload time.
+- Log the clip in `log.md` with the folder path, not a bare file name.
 
 ## 4. Check, then hand over
 
