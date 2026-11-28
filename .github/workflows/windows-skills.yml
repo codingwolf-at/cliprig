@@ -70,8 +70,8 @@ jobs:
           py="$page/.venv/Scripts/python.exe"
           test -f "$py" && echo "PASS  venv at .venv/Scripts/python.exe" || echo "FAIL  no .venv/Scripts/python.exe"
           (cd "$page" && ./.venv/Scripts/python.exe "$GITHUB_WORKSPACE/cliprig/scripts/doctor.py") | tee doctor.txt || true
-          clip=$(ls "$page"/media/edits/*.mp4 2>/dev/null | head -1)
-          test -n "$clip" && echo "PASS  clip: $clip" || { echo "FAIL  no clip in media/edits"; exit 1; }
+          clip=$(ls "$page"/media/edits/*/*.mp4 2>/dev/null | head -1)
+          test -n "$clip" && echo "PASS  clip: $clip" || { echo "FAIL  no clip in media/edits/<clip>/"; exit 1; }
           "$py" "$GITHUB_WORKSPACE/cliprig/scripts/check.py" "$clip" --caption "Clip from Windows Test." | tee check.txt
       - name: Summary of Claude's replies and tool use
         if: always()

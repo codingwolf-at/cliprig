@@ -1,10 +1,10 @@
 """One finished clip in other languages, with the same layout, hook box and captions as the original cut.
 
 Two steps, so the translation is done by a person or Claude, not a machine-translation service:
-  1. python translate.py media/edits/<clip>.mp4 --export
+  1. python translate.py media/edits/<clip>/<clip>.mp4 --export
      writes <clip>_lines.json: {"hook": "...", "lines": ["spoken sentence", ...]}
   2. Write <clip>_<lang>.json with the same shape: the hook and every line translated, same number of lines.
-     python translate.py media/edits/<clip>.mp4 --lang es [--lang pt ...]
+     python translate.py media/edits/<clip>/<clip>.mp4 --lang es [--lang pt ...]
      renders <clip>_<lang>.mp4 + .json (for rule-check).
 Translated words are spread evenly over each original sentence's timing.
 usage: python translate.py <clip.mp4> (--export | --lang LANG ...)
