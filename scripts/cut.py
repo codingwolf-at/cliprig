@@ -2,7 +2,7 @@
 
 1080x1920, 30 fps, word-by-word burned captions (slurs always masked, swears masked unless allowed),
 hook box in the first seconds, loudness normalised to -14 LUFS.
-Writes media/edits/<job>_clip<n>.mp4 + .json (metadata for rule checks).
+Writes media/edits/<job>_clip<n>/ with the .mp4, its .json (metadata for rule checks), captions.md and status.md.
 
 usage: python cut.py jobs/<id> --pick 1 [--frame] [--layout fill|blur|facecam] [--focus auto|0.5] [--cam x:y:w:h]
                      [--hook "TEXT"] [--captions word|none] [--style bold|clean|box] [--allow-profanity] [--mask "w|w"] [--start SEC --end SEC]
@@ -16,6 +16,31 @@ from common import ROOT, ends_sentence, load_json, read_pcm, run, save_json, too
 W, H = 1080, 1920
 CAP_Y = {"fill": 1380, "blur": 1460, "facecam": 1120}
 CAM_H = 730  # facecam layout: top panel height (~38%); must be even or yuv420p loses a row per panel
+CAPTIONS_TEMPLATE = """# Post captions
+
+Credit: <creator or show, as the campaign or permission requires>
+
+## Instagram
+
+## YouTube
+
+## X
+
+## TikTok
+
+## Reels
+
+## Shorts
+"""
+STATUS_TEMPLATE = """# Status
+
+- Instagram:
+- YouTube:
+- X:
+- TikTok:
+- Reels:
+- Shorts:
+"""
 # caption presets: ASS Cap and Hook styles (colours are &HAABBGGRR), all caps or not, tags around the spoken word,
 # and a small pop on each new group. Fonts missing on a system fall back to a similar one.
 STYLES = {
@@ -312,14 +337,18 @@ def main():
     if a.focus == "auto":
         a.focus = auto_focus(ffmpeg, src, s0 - off, e0 - off) if a.layout == "fill" else 0.5
         print(f"crop focus: {a.focus}")
-    out = ROOT / "media" / "edits"; out.mkdir(parents=True, exist_ok=True)
-    mp4 = out / f"{d.name}_clip{a.pick}.mp4"
+    clip_id = f"{d.name}_clip{a.pick}"  # one folder per clip: the .mp4, its .json record, captions.md and status.md
+    folder = ROOT / "media" / "edits" / clip_id; folder.mkdir(parents=True, exist_ok=True)
+    mp4 = folder / f"{clip_id}.mp4"
     encode(ffmpeg, src, s0 - off, e0 - off, video_filter(a.layout, ass, a.focus, a.cam), mp4)
     info = c.get("info", {})
     save_json(mp4.with_suffix(".json"), {"file": str(mp4), "job": str(d), "pick": a.pick, "start": s0, "end": e0,
                                          "layout": a.layout, "focus": a.focus, "cam": a.cam, "captions": a.captions, "style": a.style,
                                          "allow_profanity": a.allow_profanity, "mask": sorted(extra), "hook": a.hook, "source_url": info.get("webpage_url"),
                                          "source_title": info.get("title"), "source_channel": info.get("channel") or info.get("uploader")})
+    for name, text in (("captions.md", CAPTIONS_TEMPLATE), ("status.md", STATUS_TEMPLATE)):  # never overwrite a caption already written
+        if not (folder / name).exists():
+            (folder / name).write_text(text, encoding="utf-8")
     print(mp4)
 
 

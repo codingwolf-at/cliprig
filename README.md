@@ -89,7 +89,7 @@ Ready for your yes:
 
 | | |
 |---|---|
-| File | `media/edits/kfnfbvwm-kq-aa48498c_clip2.mp4` |
+| File | `media/edits/kfnfbvwm-kq-aa48498c_clip2/kfnfbvwm-kq-aa48498c_clip2.mp4` |
 | Platforms | YouTube Shorts, Instagram Reels |
 | Hook | He doesn't remember helping me |
 | Caption | He doesn't remember helping me. Clip from Blocks Podcast with Neal Brennan and Josh Johnson. #standup #comedy |
@@ -249,7 +249,7 @@ my-page/
 ├── learning.md        # wins, losses and the rules that came out of them
 ├── payouts.csv        # what campaigns actually show
 ├── media/raw/<source>/SOURCE.md   # permission proof per source
-├── media/edits/       # finished clips
+├── media/edits/<clip>/  # one folder per clip: .mp4, .json, captions.md, status.md
 └── jobs/              # downloads, transcripts and candidates (gitignored)
 ```
 

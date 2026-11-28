@@ -38,7 +38,7 @@ def py(script, *args):
 
 
 def meta(n):
-    return json.loads((page / "media" / "edits" / f"smoke_clip{n}.json").read_text())
+    return json.loads((page / "media" / "edits" / f"smoke_clip{n}" / f"smoke_clip{n}.json").read_text())
 
 
 # fill, crop following faces (none here, so centred), style from playbook.md
@@ -48,9 +48,10 @@ assert meta(1)["style"] == "clean" and meta(1)["focus"] == 0.5, meta(1)
 py("cut.py", str(job), "--pick", "2", "--layout", "blur", "--style", "box", "--start", "2", "--end", "9.5")
 assert meta(2)["style"] == "box", meta(2)
 for n in (1, 2):
-    out = py("check.py", str(page / "media" / "edits" / f"smoke_clip{n}.mp4"), "--caption", "Smoke test. Clip from Smoke Pod.")
+    folder = page / "media" / "edits" / f"smoke_clip{n}"
+    out = py("check.py", str(folder / f"smoke_clip{n}.mp4"), "--caption", "Smoke test. Clip from Smoke Pod.")
     assert "RESULT: PASS" in out and "LOOK  2 shots" in out, out
-    assert (page / "media" / "edits" / f"smoke_clip{n}_shots.png").stat().st_size > 1000
+    assert (folder / f"smoke_clip{n}_shots.png").stat().st_size > 1000
 # a Spanish source: English lists don't apply, so the captions are printed for Claude and --mask covers the rest
 es = [{"w": w, "s": 1.0 + i * 0.6, "e": 1.5 + i * 0.6} for i, w in enumerate("¡Qué día! Joder, no me lo creo.".split())]
 (job / "transcript.json").write_text(json.dumps(es))

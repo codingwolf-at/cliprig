@@ -9,9 +9,9 @@ One clip can reach audiences in other languages. The spoken audio stays original
 
 ## 1. Export the lines
 
-The clip must already exist in `media/edits/` from `clip-cutter`.
+The clip must already exist in `media/edits/<clip>/` from `clip-cutter`.
 
-`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/translate.py" media/edits/<clip>.mp4 --export`
+`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/translate.py" media/edits/<clip>/<clip>.mp4 --export`
 
 It writes `<clip>_lines.json`: the hook and each spoken sentence.
 
@@ -27,7 +27,7 @@ For each language, write `<clip>_<lang>.json` next to the clip, same shape: `{"h
 
 ## 3. Render
 
-`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/translate.py" media/edits/<clip>.mp4 --lang es [--lang pt ...]`
+`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/translate.py" media/edits/<clip>/<clip>.mp4 --lang es [--lang pt ...]`
 
 It writes `<clip>_<lang>.mp4` and `.json` with the original's layout, crop, hook box and loudness. View a frame at 1 second and one mid-clip: hook and captions show, accents and special characters render.
 

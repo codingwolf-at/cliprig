@@ -13,7 +13,7 @@ Write the post caption first, following the playbook's caption rules for the pla
 
 ## 2. Run
 
-`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" media/edits/<clip>.mp4 --min <s> --max <s> --caption "<caption>" --require "#tag @handle" --ban "word|phrase"`
+`.venv/bin/python "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" media/edits/<clip>/<clip>.mp4 --min <s> --max <s> --caption "<caption>" --require "#tag @handle" --ban "word|phrase"`
 
 It checks: 1080x1920, about 30 fps, audio present, length, banned terms in hook and caption (piracy and leak words plus `--ban`), required tags and mentions, and a credit in the caption. Without `--min`/`--max` it uses 7-60 seconds. It also saves `<clip>_shots.png`, one frame per shot, and prints when each shot starts.
 
